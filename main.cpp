@@ -101,6 +101,11 @@ public:
         for (int i = 0; i < number; i++)
         {
             print("playing a game...");
+            /*
+            1. find a match (based on assiged MMR)
+            2. resolve match (randomly, based on true skill)
+            3. update mmr, add history
+            */
         }
     }
 
