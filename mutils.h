@@ -19,6 +19,11 @@ std::string str(A a)
     return ss.str();
 }
 
+inline std::string str(std::string s)
+{
+    return s;
+}
+
 template <typename T>
 std::string str(const std::vector<T> &a)
 {
