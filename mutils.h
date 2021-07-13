@@ -43,6 +43,12 @@ std::string str(const std::vector<T> &a)
     return s;
 }
 
+template <typename A, typename B, typename C, typename D, typename E, typename F, typename G>
+std::string str(A a, B b, C c, D d, E e, F f, G g)
+{
+    return str(a) + str(b) + str(c) + str(d) + str(e) + str(f) + str(g);
+}
+
 template <typename A, typename B, typename C, typename D, typename E, typename F>
 std::string str(A a, B b, C c, D d, E e, F f)
 {
@@ -77,41 +83,46 @@ template <typename A, typename B, typename C, typename D, typename E, typename F
 void print(A a, B b, C c, D d, E e, F f)
 {
     std::cout << str(a) << " " << str(b) << " " << str(c) << " " << str(d) << " "
-              << str(e) << " " << str(f) << "\n";
+              << str(e) << " " << str(f) << std::endl;
 }
 
 template <typename A, typename B, typename C, typename D, typename E>
 void print(A a, B b, C c, D d, E e)
 {
     std::cout << str(a) << " " << str(b) << " " << str(c) << " " << str(d) << " "
-              << str(e) << "\n";
+              << str(e) << std::endl;
 }
 
 template <typename A, typename B, typename C, typename D>
 void print(A a, B b, C c, D d)
 {
     std::cout << str(a) << " " << str(b) << " " << str(c) << " " << str(d)
-              << "\n";
+              << std::endl;
 }
 
 template <typename A, typename B, typename C>
 void print(A a, B b, C c)
 {
     std::cout << str(a) << " " << str(b) << " " << str(c)
-              << "\n";
+              << std::endl;
 }
 
 template <typename A, typename B>
 void print(A a, B b)
 {
     std::cout << str(a) << " " << str(b)
-              << "\n";
+              << std::endl;
 }
 
 template <typename A>
 void print(A a)
 {
-    std::cout << str(a) << "\n";
+    std::cout << str(a) << std::endl;
+}
+
+inline void print()
+{
+    std::cout << std::endl;
 }
 
 // Logs something to the file
