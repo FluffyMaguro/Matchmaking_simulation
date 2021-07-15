@@ -37,6 +37,8 @@ def plot_mmr_history(DATAVALUES=6):
     ax2.set_ylabel("Chances against opponents", color="red")
 
     plt.title(f"The best player ({extremes[1]['skill']})")
+    ax.grid(alpha=0.2)
+    plt.grid(alpha=0.2)
     plt.savefig("Player_extremes.png")
 
     plt.figure().clear()
@@ -69,6 +71,8 @@ def plot_mmr_history(DATAVALUES=6):
         "How player MMR and opponents change\n"
         f"Average unique opponents per player: {statistics.mean(unique_opponents)}"
     )
+    ax[0].grid(alpha=0.2)
+    ax[1].grid(alpha=0.2)
     plt.savefig("Player_history.png")
 
 
@@ -118,6 +122,7 @@ def plot_other():
         f"Game count per player ({min(histories)}-{max(histories)})",
         color='#0b47bf')
     plt.tight_layout()
+    plt.grid(alpha=0.2)
     plt.savefig("MMR_dist.png")
 
     # Games played
@@ -129,6 +134,7 @@ def plot_other():
     plt.title(
         f"Number of games per player\nMedian: {statistics.median(games_played):.0f}"
     )
+    plt.grid(alpha=0.2)
     plt.savefig("Games_played.png")
 
 
