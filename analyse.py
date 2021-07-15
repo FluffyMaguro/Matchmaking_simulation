@@ -1,6 +1,7 @@
 import json
 import matplotlib.pyplot as plt
 import seaborn as sns
+import statistics
 
 with open("data.json", 'r') as f:
     data = json.load(f)
@@ -8,8 +9,10 @@ with open("data.json", 'r') as f:
     ### PLOTTING
 plt.rcParams['figure.dpi'] = 150
 
+
 ## PLAYER HISTORY
 def plot_mmr_history(DATAVALUES=6):
+    unique_opponents = [len(set(i["opponent_history"])) for i in data]
     fig, ax = plt.subplots(2, 1)
 
     for player in data[:DATAVALUES]:
@@ -22,14 +25,23 @@ def plot_mmr_history(DATAVALUES=6):
                    ha="left",
                    va="center",
                    color=p[0].get_color())
-        ax[1].plot(list(range(len(opp))), opp, linewidth=0.3)
+        p = ax[1].plot(list(range(len(opp))), opp, linewidth=0.3)
+        ax[1].text(len(opp) + 1,
+                   opp[-1],
+                   len(set(opp)),
+                   ha="left",
+                   color=p[0].get_color())
 
     ax[0].set_ylabel("MMR")
     ax[0].set_xlim(0, ax[0].get_xlim()[1] * 1.1)
     ax[1].set_ylabel("Opponent skill")
     ax[1].set_xlabel("Games")
+    ax[1].set_xlim(0, ax[1].get_xlim()[1] * 1.1)
     ax[1].set_ylim(0, 2)
-    ax[0].set_title("How player MMR and opponents change")
+    ax[0].set_title(
+        "How player MMR and opponents change\n"
+        f"Average unique opponents per player: {statistics.mean(unique_opponents)}"
+    )
     plt.savefig("Player_history.png")
 
 
@@ -62,12 +74,32 @@ def plot_other():
 
     # Player MMR dist
     plt.figure().clear()
+    fig, ax1 = plt.subplots()
+
     sns.histplot(mmrs, element='poly', color='red', fill=True, alpha=0.3)
     plt.title("Player MMR distribution")
     plt.xlabel("Player MMR")
-    plt.ylabel("Player count")
+    ax1.set_ylabel("Player count", color='red')
     plt.grid(alpha=0.2)
+
+    ax2 = ax1.twinx()
+    ndata = [i for i in sorted(data, key=lambda x: x["mmr"])]
+    nmmrs = [i["mmr"] for i in ndata]
+    ax2.scatter(nmmrs, [len(i["opponent_history"]) for i in ndata], s=2)
+    ax2.set_ylabel("Game count per player", color='#0b47bf')
+    plt.tight_layout()
     plt.savefig("MMR_dist.png")
+
+    # Games played
+    plt.figure().clear()
+    games_played = [len(i["opponent_history"]) for i in data]
+    sns.histplot(games_played, element='poly')
+    plt.xlabel("Games played")
+    plt.ylabel("Player count")
+    plt.title(
+        f"Number of games per player\nMedian: {statistics.median(games_played):.0f}"
+    )
+    plt.savefig("Games_played.png")
 
 
 plot_other()

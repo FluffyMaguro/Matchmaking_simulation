@@ -35,8 +35,7 @@ std::string str(const std::vector<T> &a)
     std::string s = "[";
     for (const T &el : a)
     {
-        s += str(el);
-        s += ", ";
+        s += str(el) + ", ";
     }
     s.erase(s.end() - 2, s.end());
     s += "]";
