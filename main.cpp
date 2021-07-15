@@ -84,18 +84,6 @@ class ELO_strategy : public MatchmakingStrategy
     // ** TRY CHANGING So diff in chances is more aggressive (more points if chances are skewed more?)
   
     const double K = 32;
-    /*
-    High K seems to have better accuracy and slightly lower nunber of unique opponents
-
-    K       Opponents       Inaccuracy
-    4       97.3            18.36
-    8       83.3            11.98
-    16      74.9            8.74
-    32      69.4            7.33
-    64      67.4            6.71
-    128     66.6            6.17
-
-    */
 
 public:
     // Checks if the match between players would be a good based on MMR
@@ -289,8 +277,14 @@ int main()
     limit = 10*offset → Inaccuracy: 12
     limit = 100*offset → Inaccuracy: 60
 
-    ELO 2000-1000000
-    K=32 → Inaccuracy: 9.26673
+    ELO 200-100000
+    K       Opponents       Inaccuracy
+    4       99              19.2
+    8       85              12.5
+    16      75              9.0
+    32      69.4            7.5
+    64      67.4            6.71
+    128     66.6            6.17
 
     */
 

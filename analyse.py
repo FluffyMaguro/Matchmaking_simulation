@@ -2,6 +2,7 @@ import json
 import matplotlib.pyplot as plt
 import seaborn as sns
 import statistics
+import math
 
 with open("data.json", 'r') as f:
     data = json.load(f)
@@ -13,9 +14,35 @@ plt.rcParams['figure.dpi'] = 150
 ## PLAYER HISTORY
 def plot_mmr_history(DATAVALUES=6):
     unique_opponents = [len(set(i["opponent_history"])) for i in data]
+    extremes = [p for p in sorted(data, key=lambda x: x["skill"])]
+    extremes = [extremes[0], extremes[-1]]
+    players = data[:DATAVALUES - 2] + extremes
+
+    fig, ax = plt.subplots()
+
+    ax.plot(range(len(extremes[1]['mmr_history'])),
+            extremes[1]['mmr_history'],
+            label=f"Player skill: {extremes[1]['skill']}")
+
+    ax.set_ylabel("MMR", color="#0b47bf")
+    ax.set_xlabel("Games")
+
+    chances = [
+        1 / (1 + math.exp(-10 * (extremes[1]['skill'] - opponent)))
+        for opponent in extremes[1]['opponent_history']
+    ]
+    ax2 = ax.twinx()
+    ax2.plot(chances, color='red', linewidth=0.5)
+    ax2.set_ylim(0, 1.05)
+    ax2.set_ylabel("Chances against opponents", color="red")
+
+    plt.title(f"The best player ({extremes[1]['skill']})")
+    plt.savefig("Player_extremes.png")
+
+    plt.figure().clear()
     fig, ax = plt.subplots(2, 1)
 
-    for player in data[:DATAVALUES]:
+    for player in players:
         mmr = player["mmr_history"]
         opp = player["opponent_history"]
         p = ax[0].plot(list(range(len(mmr))), mmr, linewidth=0.3)
@@ -45,7 +72,7 @@ def plot_mmr_history(DATAVALUES=6):
     plt.savefig("Player_history.png")
 
 
-plot_mmr_history(5)
+plot_mmr_history()
 
 ### Sort data
 data = [i for i in sorted(data, key=lambda x: x["skill"])]
@@ -85,8 +112,11 @@ def plot_other():
     ax2 = ax1.twinx()
     ndata = [i for i in sorted(data, key=lambda x: x["mmr"])]
     nmmrs = [i["mmr"] for i in ndata]
-    ax2.scatter(nmmrs, [len(i["opponent_history"]) for i in ndata], s=2)
-    ax2.set_ylabel("Game count per player", color='#0b47bf')
+    histories = [len(i["opponent_history"]) for i in ndata]
+    ax2.scatter(nmmrs, histories, s=2)
+    ax2.set_ylabel(
+        f"Game count per player ({min(histories)}-{max(histories)})",
+        color='#0b47bf')
     plt.tight_layout()
     plt.savefig("MMR_dist.png")
 
