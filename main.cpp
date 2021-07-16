@@ -21,8 +21,10 @@ public:
     double mmr = 2000;
     // Vector of opponent skills. It's used to define the matchmaker accuracy.
     std::vector<double> opponent_history;
-    //
+    // MMR history
     std::vector<double> mmr_history;
+    // Chances predicted by the matchmaker
+    std::vector<double> predicted_chances;
     // Define player and assign him his skill value
     Player(double pskill)
     {
@@ -90,7 +92,7 @@ public:
     // More complicated version would take into account search time, latency, etc.
     bool good_match(Player &p1, Player &p2)
     {
-        return std::abs(p1.mmr - p2.mmr) < 35.0; // 35 MMR → 55% ; 70 → 60% ; 120 → 66%; 191 → 75%
+        return std::abs(p1.mmr - p2.mmr) < 70.0; // 35 MMR → 55% ; 70 → 60% ; 120 → 66%; 191 → 75%
     }
 
     // Updates MMR for
@@ -104,6 +106,9 @@ public:
         // Chances of winning for the winner and loser. /400 is changed to 173. to use exp instead of pow(10,)
         double Ew = 1 / (1 + exp((loser.mmr - winner.mmr) / 173.718));
         double El = 1 - Ew;
+
+        winner.predicted_chances.push_back(Ew);
+        loser.predicted_chances.push_back(El);
 
         // printf("Winner (%f) | Loser (%f) | Expected: %f Actual: %f | +%f \n", winner.mmr, loser.mmr, Ew, actual_chances, K * El);
         winner.mmr += K * El;
@@ -238,7 +243,7 @@ void save_player_data(const std::vector<Player> &players)
     for (const Player &p : players)
     {
         s += str("{\"skill\": ", p.skill, ", \"mmr\": ", p.mmr, ", \"opponent_history\": ", str(p.opponent_history));
-        s += str(", \"mmr_history\": ", str(p.mmr_history), "},\n");
+        s += str(", \"mmr_history\": ", str(p.mmr_history),", \"predicted_chances\": ", str(p.predicted_chances), "},\n");
     }
     s.erase(s.end() - 2, s.end());
     s += "\n]";
@@ -264,8 +269,8 @@ int main()
 {
     ELO_strategy strategy;
     Simulation simulation(strategy);
-    simulation.add_players(200);
-    simulation.play_games(100000);
+    simulation.add_players(20000);
+    simulation.play_games(5000000);
 
     double inaccuracy = simulation.get_inaccuracy();
     print("Inaccuracy:", inaccuracy);
