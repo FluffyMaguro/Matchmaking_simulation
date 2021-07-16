@@ -55,9 +55,9 @@ def plot_mmr_history(DATAVALUES=6):
     ax[2].legend()
     ax[2].grid(alpha=0.2)
     ax[2].set_title(
-        f'Best player ({chance_skill(extremes[0]["skill"]-extremes[1]["skill"]):2f} chance against second)'
+        f'Best player ({chance_skill(extremes[0]["skill"]-extremes[1]["skill"]):.2f} chance against second best)'
     )
-    ax[2].set_xlabel("Games (Best player)")
+    ax[2].set_xlabel("Games")
     ax[2].set_ylabel("Changes against the oppponent")
     ax[2].set_ylim(-0.02, 1.02)
 
@@ -69,7 +69,7 @@ def plot_mmr_history(DATAVALUES=6):
     ax[4].legend()
     ax[4].grid(alpha=0.2)
     ax[4].set_title(
-        f'Worst player ({chance_skill(extremes[-1]["skill"]-extremes[-2]["skill"]):.2f} chance against second)'
+        f'Worst player ({chance_skill(extremes[-1]["skill"]-extremes[-2]["skill"]):.2f} chance against second worst)'
     )
     ax[4].set_xlabel("Games")
     ax[4].set_ylabel("Changes against the oppponent")
