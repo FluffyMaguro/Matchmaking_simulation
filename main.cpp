@@ -261,10 +261,12 @@ void save_player_data(const std::vector<Player> &players)
 
 std::vector<Player> run_sim(int players, int iterations)
 {
+    Timeit t;
     ELO_strategy strategy;
     Simulation simulation(strategy);
     simulation.add_players(players);
     simulation.play_games(iterations);
+    print("Pure simulation finished in", t.ms() / 1000, "seconds");
     // double inaccuracy = simulation.get_inaccuracy();
     // print("Inaccuracy:", inaccuracy);
     // system("python analyse.py");

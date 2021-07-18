@@ -39,7 +39,7 @@ PyMODINIT_FUNC PyInit_psimulation(void)
 
 // Helper function
 // Creares a dictionary of all player data
-static PyObject *get_player_data(const Player &p)
+PyObject *get_player_data(const Player &p)
 {
     PyObject *opponent_history = PyList_New(0);
     PyObject *mmr_history = PyList_New(0);

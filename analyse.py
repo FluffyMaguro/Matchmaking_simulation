@@ -8,7 +8,7 @@ import psimulation
 
 ### RUN SIMULATION
 start = time.time()
-data = psimulation.run_simulation(2000, 10000000)
+data = psimulation.run_simulation(2000, 100000000)
 print(f"Simulation finished in {time.time()-start:.3f} seconds")
 start = time.time()
 
