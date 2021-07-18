@@ -148,7 +148,18 @@ class Timeit
     std::chrono::high_resolution_clock::time_point start;
 
 public:
-    Timeit();
-    void print();
-    double ms();
+    Timeit()
+    {
+        start = std::chrono::high_resolution_clock::now();
+    }
+    void print()
+    {
+        std::chrono::duration<double, std::milli> ms_double = std::chrono::high_resolution_clock::now() - start;
+        std::cout << "Elapsed time: " << ms_double.count() << " ms\n";
+    }
+    double ms()
+    {
+        std::chrono::duration<double, std::milli> ms_double = std::chrono::high_resolution_clock::now() - start;
+        return ms_double.count();
+    }
 };

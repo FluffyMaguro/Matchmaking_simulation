@@ -4,6 +4,6 @@ setup(
     name='psimulation',
     version='1.0',
     ext_modules=[
-        Extension("psimulation", ["sim.cpp", "mutils.cpp"])
+        Extension("psimulation", ["sim.cpp"])
     ],
 )
