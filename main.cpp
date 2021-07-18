@@ -84,7 +84,7 @@ class ELO_strategy : public MatchmakingStrategy
     // ** TEST WITH fixed K
     // ** TEST WITH K(player.mmr)
     // ** TRY CHANGING So diff in chances is more aggressive (more points if chances are skewed more?)
-  
+
     const double K = 32;
 
 public:
@@ -114,9 +114,8 @@ public:
         winner.mmr += K * El;
         loser.mmr -= K * El;
 
-        
         double diff = Ew - actual_chances;
-        chance_differences.push_back(diff*diff);
+        chance_differences.push_back(diff * diff);
     }
 };
 
@@ -233,24 +232,19 @@ public:
 };
 
 // Saves player data into a json file for additional analysis
+// Extremely slow to create a string or write (e.g 250MB). C-extension for Python is much faster.
 void save_player_data(const std::vector<Player> &players)
 {
     std::string s = "[\n";
 
     // Get player data
-    auto t1 = std::chrono::high_resolution_clock::now();
-
     for (const Player &p : players)
     {
         s += str("{\"skill\": ", p.skill, ", \"mmr\": ", p.mmr, ", \"opponent_history\": ", str(p.opponent_history));
-        s += str(", \"mmr_history\": ", str(p.mmr_history),", \"predicted_chances\": ", str(p.predicted_chances), "},\n");
+        s += str(", \"mmr_history\": ", str(p.mmr_history), ", \"predicted_chances\": ", str(p.predicted_chances), "},\n");
     }
     s.erase(s.end() - 2, s.end());
     s += "\n]";
-
-    auto t2 = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double, std::milli> ms_double = t2 - t1;
-    print("String created", ms_double.count(), "ms");
 
     // Save data
     std::ofstream myfile("data.json");
@@ -265,42 +259,14 @@ void save_player_data(const std::vector<Player> &players)
     }
 }
 
-int main()
+std::vector<Player> run_sim(int players, int iterations)
 {
     ELO_strategy strategy;
     Simulation simulation(strategy);
-    simulation.add_players(20000);
-    simulation.play_games(5000000);
-
-    double inaccuracy = simulation.get_inaccuracy();
-    print("Inaccuracy:", inaccuracy);
-    /*
-    Naive 200-100000 (players, games)
-    limit = 1*offset → Inaccuracy: 6.00
-    limit = 2*offset → Inaccuracy: 6.67
-    limit = 5*offset → Inaccuracy: 8.6
-    limit = 10*offset → Inaccuracy: 12
-    limit = 100*offset → Inaccuracy: 60
-
-    ELO 200-100000
-    K       Opponents       Inaccuracy
-    4       99              19.2
-    8       85              12.5
-    16      75              9.0
-    32      69.4            7.5
-    64      67.4            6.71
-    128     66.6            6.17
-
-    */
-
-    // Let's try analysis in Python
-
-    save_player_data(simulation.players);
-    system("python analyse.py");
-
-    double total = 0;
-    for (const double &i : chance_differences) {
-        total += i;
-    }
-    print("sum of chance_differences^2:",total);
+    simulation.add_players(players);
+    simulation.play_games(iterations);
+    // double inaccuracy = simulation.get_inaccuracy();
+    // print("Inaccuracy:", inaccuracy);
+    // system("python analyse.py");
+    return simulation.players;
 }

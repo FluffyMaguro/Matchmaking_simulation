@@ -1,14 +1,18 @@
-import json
 import matplotlib.pyplot as plt
-from numpy import right_shift
 import seaborn as sns
 import statistics
 import math
+import time
 
-with open("data.json", 'r') as f:
-    data = json.load(f)
+import psimulation
 
-    ### PLOTTING
+### RUN SIMULATION
+start = time.time()
+data = psimulation.run_simulation(2000, 10000000)
+print(f"Simulation finished in {time.time()-start:.3f} seconds")
+start = time.time()
+
+### PLOTTING
 plt.rcParams['figure.dpi'] = 150
 
 
@@ -229,3 +233,4 @@ def plot_other():
 
 
 plot_other()
+print(f"Plotting finished in {time.time()-start:.3f} seconds")

@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <fstream>
+#include <chrono>
 
 // Functions for creating a string from multiple variables and priting multiple variables
 // Doesn't work on arrays correctly (as they decay to pointers when passed to a function).
@@ -141,3 +142,13 @@ void log(A a, std::string filename = "log.txt")
         std::cout << "Can't save to the file. Won't open.\n";
     }
 }
+
+class Timeit
+{
+    std::chrono::high_resolution_clock::time_point start;
+
+public:
+    Timeit();
+    void print();
+    double ms();
+};
