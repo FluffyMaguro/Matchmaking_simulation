@@ -3,6 +3,7 @@ import statistics
 import time
 
 import matplotlib.pyplot as plt
+import numpy as np
 import seaborn as sns
 
 import psimulation
@@ -10,7 +11,7 @@ import psimulation
 ### RUN SIMULATION
 start = time.time()
 data = psimulation.run_simulation(20000, 50000000)
-prediction_differences = psimulation.export_prediction_diff()
+prediction_differences = np.array(psimulation.export_prediction_diff())
 print(f"Simulation finished in {time.time()-start:.3f} seconds")
 
 ### PLOTTING
@@ -32,10 +33,11 @@ def plot_prediction_differences():
     stdevs = [[], []]
     x = []
     for i in range(factor):
-        slice = prediction_differences[L * i:L * (i + 1)]
-        means.append(statistics.mean(slice))
-        stdevs[0].append(means[-1] - statistics.stdev(slice))
-        stdevs[1].append(means[-1] + statistics.stdev(slice))
+        mean = np.average(prediction_differences[L * i:L * (i + 1)])
+        stdev = np.std(prediction_differences[L * i:L * (i + 1)])
+        means.append(mean)
+        stdevs[0].append(mean - stdev)
+        stdevs[1].append(mean + stdev)
         x.append(L * i)
 
     fig, ax = plt.subplots(1, 1)
@@ -60,7 +62,9 @@ def plot_prediction_differences():
     plt.savefig("prediction_differences.png")
 
 
+start_pred = time.time()
 plot_prediction_differences()
+print(f"Prediction plotting finished in {time.time()-start_pred:.3f} seconds")
 
 
 ## PLAYER HISTORY
@@ -174,7 +178,9 @@ def plot_mmr_history(DATAVALUES=6):
     plt.savefig("Player_history.png")
 
 
+start_hist = time.time()
 plot_mmr_history()
+print(f"MMR history plotting finished in {time.time()-start_hist:.3f} seconds")
 
 ### Sort data
 data = [i for i in sorted(data, key=lambda x: x["skill"])]

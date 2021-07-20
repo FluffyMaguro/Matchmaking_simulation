@@ -12,7 +12,7 @@ static PyObject *export_prediction_diff(PyObject *self, PyObject *args);
 /* Module methods (how it's called for python | how it's called here | arg-type | docstring) */
 static PyMethodDef module_methods[] = {
     {"run_simulation", run_simulation, METH_VARARGS, "Runs a simulation with `players` and `iterations`"},
-    {"export_prediction_diff", export_prediction_diff, METH_VARARGS, "get prediction differences"},
+    {"export_prediction_diff", export_prediction_diff, METH_NOARGS, "get prediction differences"},
     {NULL, NULL, 0, NULL} // Last needs to be this
 };
 
