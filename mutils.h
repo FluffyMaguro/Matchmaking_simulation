@@ -148,6 +148,7 @@ class Timeit
     std::chrono::high_resolution_clock::time_point start;
 
 public:
+    // Class methods defined in header files are inlined by default
     Timeit()
     {
         start = std::chrono::high_resolution_clock::now();

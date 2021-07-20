@@ -1,28 +1,71 @@
+import math
+import statistics
+import time
+
 import matplotlib.pyplot as plt
 import seaborn as sns
-import statistics
-import math
-import time
 
 import psimulation
 
 ### RUN SIMULATION
 start = time.time()
-data = psimulation.run_simulation(2000, 100000000)
+data = psimulation.run_simulation(20000, 50000000)
+prediction_differences = psimulation.export_prediction_diff()
 print(f"Simulation finished in {time.time()-start:.3f} seconds")
-start = time.time()
 
 ### PLOTTING
+start = time.time()
 plt.rcParams['figure.dpi'] = 150
 
 
 def chance_skill(diff):
     """ Returns the chance for a player to win based on skill difference"""
-    return 1 / (1 + math.exp(-10 * (diff)))
+    return 1 / (1 + math.exp(-diff / 173.718))  # ELO points
+
+
+## PREDICTION DIFFERENCES
+def plot_prediction_differences():
+    plt.figure().clear()
+    factor = 50
+    L = int(len(prediction_differences) / factor)
+    means = []
+    stdevs = [[], []]
+    x = []
+    for i in range(factor):
+        slice = prediction_differences[L * i:L * (i + 1)]
+        means.append(statistics.mean(slice))
+        stdevs[0].append(means[-1] - statistics.stdev(slice))
+        stdevs[1].append(means[-1] + statistics.stdev(slice))
+        x.append(L * i)
+
+    fig, ax = plt.subplots(1, 1)
+    ax.text(0,
+            means[0] + 0.01,
+            f"{means[0]:.2f}",
+            color="#1968cf",
+            ha="center")
+    ax.text(x[-1],
+            means[-1] + 0.01,
+            f"{means[-1]:.2f}",
+            color="#1968cf",
+            ha="center")
+
+    ax.plot(x, means)
+    ax.fill_between(x, stdevs[0], stdevs[1], color="#1968cf", alpha=0.2)
+    ax.set_ylabel("Error in matchmaking")
+    ax.set_xlabel("Games")
+    plt.grid(alpha=0.2)
+    ax.set_title("How matchmaking improves (moving average of errors)")
+    plt.tight_layout()
+    plt.savefig("prediction_differences.png")
+
+
+plot_prediction_differences()
 
 
 ## PLAYER HISTORY
 def plot_mmr_history(DATAVALUES=6):
+    plt.figure().clear()
     unique_opponents = [len(set(i["opponent_history"])) for i in data]
     extremes = [
         p for p in sorted(data, key=lambda x: x["skill"], reverse=True)
@@ -121,7 +164,6 @@ def plot_mmr_history(DATAVALUES=6):
     ax[1].set_ylabel("Opponent skill")
     ax[1].set_xlabel("Games")
     ax[1].set_xlim(0, ax[1].get_xlim()[1] * 1.1)
-    ax[1].set_ylim(-0.15, 2)
     ax[0].set_title(
         "How player MMR and opponents change\n"
         f"Average unique opponents per player: {statistics.mean(unique_opponents)}"
@@ -144,10 +186,15 @@ def plot_other():
     ## MMR - SKILL
     plt.figure().clear()
     plt.plot(skills, mmrs)
+    plt.plot([min(skills), max(skills)],
+             [min(skills), max(skills)],
+             color="black",
+             linewidth=0.5)
     plt.title("MMR - Skill relation")
     plt.xlabel("Player skill")
     plt.ylabel("Player MMR")
     plt.grid(alpha=0.2)
+    plt.tight_layout()
     plt.savefig("MMR-Skill.png")
 
     ## Player skill dist

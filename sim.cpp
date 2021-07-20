@@ -7,10 +7,12 @@ static char module_docstring[] =
 
 // Declare first functions
 static PyObject *run_simulation(PyObject *self, PyObject *args);
+static PyObject *export_prediction_diff(PyObject *self, PyObject *args);
 
 /* Module methods (how it's called for python | how it's called here | arg-type | docstring) */
 static PyMethodDef module_methods[] = {
     {"run_simulation", run_simulation, METH_VARARGS, "Runs a simulation with `players` and `iterations`"},
+    {"export_prediction_diff", export_prediction_diff, METH_VARARGS, "get prediction differences"},
     {NULL, NULL, 0, NULL} // Last needs to be this
 };
 
@@ -62,7 +64,7 @@ static PyObject *run_simulation(PyObject *self, PyObject *args)
         return NULL;
 
     // Run simulation
-    std::vector<Player> player_data = run_sim(players, iterations);
+    std::vector<Player> &player_data = run_sim(players, iterations);
 
     // Prepare data to be send away
     PyObject *Data = PyList_New(0);
@@ -71,6 +73,17 @@ static PyObject *run_simulation(PyObject *self, PyObject *args)
         PyList_Append(Data, Py_BuildValue("O", get_player_data(p)));
     }
     return Data;
+}
+
+static PyObject *export_prediction_diff(PyObject *self, PyObject *args)
+{
+    std::vector<double> &prediction_diff = get_prediction_diff();
+    PyObject *pylist = PyList_New(0);
+    for (const double &i : prediction_diff)
+    {
+        PyList_Append(pylist, Py_BuildValue("d", i));
+    }
+    return pylist;
 }
 
 // Now that all mess is initialized, lets look at actual functions

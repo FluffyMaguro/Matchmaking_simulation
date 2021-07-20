@@ -8,7 +8,8 @@
 
 #include "mutils.h" // adds "print" and "str" fuction templates
 
-std::vector<double> chance_differences;
+std::vector<double> prediction_difference;
+
 //
 // PLAYER CLASS
 //
@@ -18,7 +19,7 @@ public:
     // Actual player skill
     double skill;
     // MMR assigned by the matchmaker
-    double mmr = 2000;
+    double mmr = 2820 / 2.2;
     // Vector of opponent skills. It's used to define the matchmaker accuracy.
     std::vector<double> opponent_history;
     // MMR history
@@ -51,16 +52,16 @@ public:
 //
 // NAIVE MATCHMAKING STRATEGY
 //
-class naive_strategy : public MatchmakingStrategy
+class Naive_strategy : public MatchmakingStrategy
 {
-    const int offset = 1; // how much MMR changes for win/loss
+    const int offset = 10; // how much MMR changes for win/loss
 
 public:
     // Checks if the match between players would be a good based on MMR
     // More complicated version would take into account search time, latency, etc.
     bool good_match(Player &p1, Player &p2)
     {
-        return std::abs(p1.mmr - p2.mmr) < offset * 2;
+        return std::abs(p1.mmr - p2.mmr) < offset * 5;
     }
 
     // Updates MMR
@@ -70,6 +71,9 @@ public:
         winner.mmr_history.push_back(winner.mmr);
         loser.opponent_history.push_back(winner.skill);
         loser.mmr_history.push_back(loser.mmr);
+
+        winner.predicted_chances.push_back(0.5);
+        loser.predicted_chances.push_back(0.5);
 
         winner.mmr += offset;
         loser.mmr -= offset;
@@ -85,7 +89,7 @@ class ELO_strategy : public MatchmakingStrategy
     // ** TEST WITH K(player.mmr)
     // ** TRY CHANGING So diff in chances is more aggressive (more points if chances are skewed more?)
 
-    const double K = 32;
+    const double K = 10;
 
 public:
     // Checks if the match between players would be a good based on MMR
@@ -114,8 +118,7 @@ public:
         winner.mmr += K * El;
         loser.mmr -= K * El;
 
-        double diff = Ew - actual_chances;
-        chance_differences.push_back(diff * diff);
+        prediction_difference.push_back(std::abs(actual_chances - Ew));
     }
 };
 
@@ -137,7 +140,7 @@ public:
         // std::default_random_engine new_RNG(std::chrono::steady_clock::now().time_since_epoch().count()); //fixed seed for now
         std::default_random_engine new_RNG(1);
         RNG = new_RNG;
-        std::normal_distribution<> new_skill_distribution(1, 0.4); // mean, std
+        std::normal_distribution<> new_skill_distribution(2820 / 2.2, 800 / 2.2); // mean, std
         skill_distribution = new_skill_distribution;
     }
 
@@ -164,7 +167,8 @@ public:
     double get_chance(Player &p1, Player &p2)
     {
         // This depends on how we have chosen to distribute skill
-        double chance = 1 / (1 + exp(-10 * (p1.skill - p2.skill)));
+        // double chance = 1 / (1 + exp(-10 * (p1.skill - p2.skill)));
+        double chance = 1 / (1 + exp((p2.skill - p1.skill) / 173.718)); // ELO points equivalent
         // printf("P1s: %f vs P2s: %f --> %f%% for P1 \n", p1.skill, p2.skill, 100 * chance);
         return chance;
     }
@@ -172,11 +176,11 @@ public:
     void resolve_game(Player &p1, Player &p2)
     {
         // printf("Playing a game between #%p (%i MMR) and #%p (%i MMR)\n", &p1, p1.mmr, &p2, p2.mmr);
-
-        if (RNG() % 10000 <= 10000 * get_chance(p1, p2))
-            strategy->update_mmr(p1, p2, get_chance(p1, p2));
+        double p1_chance = get_chance(p1, p2);
+        if (RNG() % 10000 <= 10000 * p1_chance)
+            strategy->update_mmr(p1, p2, p1_chance);
         else
-            strategy->update_mmr(p2, p1, get_chance(p2, p1));
+            strategy->update_mmr(p2, p1, 1 - p1_chance);
     }
 
     // Runs the simulation for `number` of games
@@ -213,22 +217,6 @@ public:
             // }
         }
     }
-
-    // Calculates inaccuracy of matchmaking (sum of square of skill differences / number of players)
-    // Accurate only for the same amount of games (as early games will be more inaccurate)
-    double get_inaccuracy()
-    {
-        double total = 0;
-        for (const Player &player : players)
-        {
-            for (const double &opponent : player.opponent_history)
-            {
-                double diff = opponent - player.skill;
-                total += diff * diff;
-            }
-        }
-        return total / players.size();
-    }
 };
 
 // Saves player data into a json file for additional analysis
@@ -259,6 +247,11 @@ void save_player_data(const std::vector<Player> &players)
     }
 }
 
+std::vector<double> get_prediction_diff()
+{
+    return prediction_difference;
+}
+
 std::vector<Player> run_sim(int players, int iterations)
 {
     Timeit t;
@@ -267,8 +260,5 @@ std::vector<Player> run_sim(int players, int iterations)
     simulation.add_players(players);
     simulation.play_games(iterations);
     print("Pure simulation finished in", t.ms() / 1000, "seconds");
-    // double inaccuracy = simulation.get_inaccuracy();
-    // print("Inaccuracy:", inaccuracy);
-    // system("python analyse.py");
     return simulation.players;
 }
