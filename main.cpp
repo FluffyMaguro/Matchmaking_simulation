@@ -85,10 +85,6 @@ public:
 //
 class ELO_strategy : public MatchmakingStrategy
 {
-    // ** TEST WITH fixed K
-    // ** TEST WITH K(player.mmr)
-    // ** TRY CHANGING So diff in chances is more aggressive (more points if chances are skewed more?)
-
     const double K = 10;
 
 public:
@@ -167,7 +163,6 @@ public:
     double get_chance(Player &p1, Player &p2)
     {
         // This depends on how we have chosen to distribute skill
-        // double chance = 1 / (1 + exp(-10 * (p1.skill - p2.skill)));
         double chance = 1 / (1 + exp((p2.skill - p1.skill) / 173.718)); // ELO points equivalent
         // printf("P1s: %f vs P2s: %f --> %f%% for P1 \n", p1.skill, p2.skill, 100 * chance);
         return chance;
@@ -194,7 +189,6 @@ public:
         {
             // Pick a random player
             player = RNG() % players.size();
-            // found_opponent = false;
 
             // Pick a random opponent
             for (int tries = 0; tries < 10000; tries++)
@@ -205,16 +199,10 @@ public:
                 if (strategy->good_match(players[player], players[opponent]))
                 {
                     resolve_game(players[player], players[opponent]);
-                    // found_opponent = true;
                     games_played++;
                     break;
                 }
             }
-            // If we didn't found a good opponent
-            // if (!found_opponent)
-            // {
-            //     printf("failed to find a good opponent (%f MMR)\n", players[player].mmr);
-            // }
         }
     }
 };
