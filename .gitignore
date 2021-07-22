@@ -8,3 +8,4 @@ data.json
 psimulation.cp38-win_amd64.pyd
 build/*
 cache
+test.py

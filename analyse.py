@@ -59,7 +59,7 @@ def plot_prediction_differences():
     plt.grid(alpha=0.2)
     ax.set_title("How matchmaking improves (moving average of errors)")
     plt.tight_layout()
-    plt.savefig("prediction_differences.png")
+    plt.savefig("img/prediction_differences.png")
 
 
 start_pred = time.time()
@@ -141,7 +141,7 @@ def plot_mmr_history(DATAVALUES=6):
 
     fig.set_figheight(16)
     fig.tight_layout(h_pad=2.1)
-    plt.savefig("Player_extremes.png")
+    plt.savefig("img/Player_extremes.png")
 
     plt.figure().clear()
     fig, ax = plt.subplots(2, 1)
@@ -175,7 +175,7 @@ def plot_mmr_history(DATAVALUES=6):
     ax[0].grid(alpha=0.2)
     ax[1].grid(alpha=0.2)
     fig.set_figheight(8)
-    plt.savefig("Player_history.png")
+    plt.savefig("img/Player_history.png")
 
 
 start_hist = time.time()
@@ -201,7 +201,7 @@ def plot_other():
     plt.ylabel("Player MMR")
     plt.grid(alpha=0.2)
     plt.tight_layout()
-    plt.savefig("MMR-Skill.png")
+    plt.savefig("img/MMR-Skill.png")
 
     ## Player skill dist
     plt.figure().clear()
@@ -230,7 +230,7 @@ def plot_other():
 
     plt.text(plt.xlim()[1] * 0.92, plt.ylim()[1] * 0.93, f"#{lines}")
     plt.grid(alpha=0.2)
-    plt.savefig("Skill_dist.png")
+    plt.savefig("img/Skill_dist.png")
 
     ## Player MMR dist
     plt.figure().clear()
@@ -270,7 +270,7 @@ def plot_other():
     ax2.set_ylim(0, max(histories))
     plt.tight_layout()
     plt.grid(alpha=0.2)
-    plt.savefig("MMR_dist.png")
+    plt.savefig("img/MMR_dist.png")
 
     ## Games played
     plt.figure().clear()
@@ -282,7 +282,7 @@ def plot_other():
         f"Number of games per player\nMedian: {statistics.median(games_played):.0f}"
     )
     plt.grid(alpha=0.2)
-    plt.savefig("Games_played.png")
+    plt.savefig("img/Games_played.png")
 
 
 plot_other()
