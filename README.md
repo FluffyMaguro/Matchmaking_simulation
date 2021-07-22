@@ -1,3 +1,6 @@
+**Data flow:**
+*main.cpp* → *sim.cpp* → *analyse.py* → *images*
+
 ![Screenshot](./img/Skill_dist.png)
 ![Screenshot](./img/MMR_dist.png)
 ![Screenshot](./img/MMR-Skill.png)
