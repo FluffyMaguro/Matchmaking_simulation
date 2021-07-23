@@ -1,12 +1,11 @@
 #include <iostream>
 #include <string>
 #include <vector>
-// #include <cstdlib>
 #include <chrono>
 #include <random>
 #include <cmath>
 
-#include "mutils.h" // adds "print" and "str" fuction templates
+#include "mutils.h" // random helper functions
 
 std::vector<double> prediction_difference;
 
@@ -20,7 +19,7 @@ public:
     double skill;
     // MMR assigned by the matchmaker
     double mmr = 2820 / 2.2;
-    // Vector of opponent skills. It's used to define the matchmaker accuracy.
+    // Vector of opponent skills.
     std::vector<double> opponent_history;
     // MMR history
     std::vector<double> mmr_history;

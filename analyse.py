@@ -10,7 +10,9 @@ import psimulation
 
 ### RUN SIMULATION
 start = time.time()
-data = psimulation.run_simulation(20000, 50000000)
+GAMES = 50000000
+PLAYERS = 20000
+data = psimulation.run_simulation(PLAYERS, GAMES)
 prediction_differences = np.array(psimulation.export_prediction_diff())
 print(f"Simulation finished in {time.time()-start:.3f} seconds")
 
@@ -80,7 +82,7 @@ def plot_mmr_history(DATAVALUES=6):
     for i in range(3):
         ax[0].plot(range(len(extremes[i]['mmr_history'])),
                    extremes[i]['mmr_history'],
-                   label=f"Player skill: {extremes[i]['skill']}")
+                   label=f"Player skill: {extremes[i]['skill']:.2f}")
         chances = [
             chance_skill(extremes[i]['skill'] - opponent)
             for opponent in extremes[i]['opponent_history']
@@ -196,7 +198,7 @@ def plot_other():
              [min(skills), max(skills)],
              color="black",
              linewidth=0.5)
-    plt.title("MMR - Skill relation")
+    plt.title(f"MMR - Skill relation ({GAMES/PLAYERS:.0f} games/player)")
     plt.xlabel("Player skill")
     plt.ylabel("Player MMR")
     plt.grid(alpha=0.2)
