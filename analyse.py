@@ -8,16 +8,15 @@ import seaborn as sns
 
 import psimulation
 
-### RUN SIMULATION
 start = time.time()
-GAMES = 50000000
-PLAYERS = 20000
+### RUN SIMULATION
+PLAYERS = 240000
+GAMES = 1000000
 data = psimulation.run_simulation(PLAYERS, GAMES)
 prediction_differences = np.array(psimulation.export_prediction_diff())
-print(f"Simulation finished in {time.time()-start:.3f} seconds")
 
 ### PLOTTING
-start = time.time()
+start_plotting = time.time()
 plt.rcParams['figure.dpi'] = 150
 
 
@@ -172,7 +171,7 @@ def plot_mmr_history(DATAVALUES=6):
     ax[1].set_xlim(0, ax[1].get_xlim()[1] * 1.1)
     ax[0].set_title(
         "How player MMR and opponents change\n"
-        f"Average unique opponents per player: {statistics.mean(unique_opponents)}"
+        f"Average unique opponents per player: {statistics.mean(unique_opponents):.2f}"
     )
     ax[0].grid(alpha=0.2)
     ax[1].grid(alpha=0.2)
@@ -288,4 +287,5 @@ def plot_other():
 
 
 plot_other()
-print(f"Plotting finished in {time.time()-start:.3f} seconds")
+print(f"Plotting finished in {time.time()-start_plotting:.3f} seconds")
+print(f"Total time: {time.time()-start:.3f} seconds")

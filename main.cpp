@@ -91,7 +91,7 @@ public:
     // More complicated version would take into account search time, latency, etc.
     bool good_match(Player &p1, Player &p2)
     {
-        return std::abs(p1.mmr - p2.mmr) < 70.0; // 35 MMR → 55% ; 70 → 60% ; 120 → 66%; 191 → 75%
+        return std::abs(p1.mmr - p2.mmr) < 120.0; // 35 MMR → 55% ; 70 → 60% ; 120 → 66%; 191 → 75%
     }
 
     // Updates MMR for
@@ -246,6 +246,6 @@ std::vector<Player> run_sim(int players, int iterations)
     Simulation simulation(strategy);
     simulation.add_players(players);
     simulation.play_games(iterations);
-    print("Pure simulation finished in", t.ms() / 1000, "seconds");
+    print("Simulation finished in", t.ms() / 1000, "seconds");
     return simulation.players;
 }

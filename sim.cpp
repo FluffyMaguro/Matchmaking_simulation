@@ -1,6 +1,7 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 #include "main.cpp" // dirty direct include
+#include "mutils.h" // random helper functions
 
 static char module_docstring[] =
     "Module simulating various strategies for matchmaking";
@@ -67,11 +68,13 @@ static PyObject *run_simulation(PyObject *self, PyObject *args)
     std::vector<Player> &player_data = run_sim(players, iterations);
 
     // Prepare data to be send away
+    Timeit t;
     PyObject *Data = PyList_New(0);
     for (const Player &p : player_data)
     {
         PyList_Append(Data, Py_BuildValue("O", get_player_data(p)));
     }
+    print("Creating Python objects for players finished in", t.ms() / 1000, "seconds");
     return Data;
 }
 
