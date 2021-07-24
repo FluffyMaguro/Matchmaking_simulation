@@ -1,6 +1,7 @@
 import math
 import statistics
 import time
+from functools import partial
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,11 +10,12 @@ import seaborn as sns
 import psimulation
 
 start = time.time()
+
 ### RUN SIMULATION
-PLAYERS = 240000
-GAMES = 1000000
+PLAYERS = 20000
+GAMES = 100000000
 data = psimulation.run_simulation(PLAYERS, GAMES)
-prediction_differences = np.array(psimulation.export_prediction_diff())
+prediction_differences = psimulation.export_prediction_diff()
 
 ### PLOTTING
 start_plotting = time.time()
@@ -25,11 +27,16 @@ def chance_skill(diff):
     return 1 / (1 + math.exp(-diff / 173.718))  # ELO points
 
 
+def chance_skill_two(a, b):
+    """ Returns the chance for a player to win based on skill difference"""
+    return chance_skill(a - b)
+
+
 ## PREDICTION DIFFERENCES
 def plot_prediction_differences():
     plt.figure().clear()
     factor = 50
-    L = int(len(prediction_differences) / factor)
+    L = int(prediction_differences.size / factor)
     means = []
     stdevs = [[], []]
     x = []
@@ -71,6 +78,7 @@ print(f"Prediction plotting finished in {time.time()-start_pred:.3f} seconds")
 ## PLAYER HISTORY
 def plot_mmr_history(DATAVALUES=6):
     plt.figure().clear()
+    # ** posibly replace set here with np.unique (test perf on bigger sets)
     unique_opponents = [len(set(i["opponent_history"])) for i in data]
     extremes = [
         p for p in sorted(data, key=lambda x: x["skill"], reverse=True)
@@ -79,15 +87,19 @@ def plot_mmr_history(DATAVALUES=6):
     fig, ax = plt.subplots(5, 1)
 
     for i in range(3):
-        ax[0].plot(range(len(extremes[i]['mmr_history'])),
+        ax[0].plot(np.linspace(0, extremes[i]['mmr_history'].size - 1,
+                               extremes[i]['mmr_history'].size),
                    extremes[i]['mmr_history'],
                    label=f"Player skill: {extremes[i]['skill']:.2f}")
-        chances = [
-            chance_skill(extremes[i]['skill'] - opponent)
-            for opponent in extremes[i]['opponent_history']
-        ]
 
-        ax[1].scatter(range(len(chances)), chances, s=2)
+        player_chances = np.vectorize(
+            partial(chance_skill_two, extremes[i]['skill']))
+
+        chances = player_chances(extremes[i]['opponent_history'])
+
+        ax[1].scatter(np.linspace(0, chances.size - 1, chances.size),
+                      chances,
+                      s=2)
         if i == 0:
             ax[2].plot(chances, label="True chances")
 
@@ -115,7 +127,8 @@ def plot_mmr_history(DATAVALUES=6):
 
     # the worst player
     p = extremes[-1]
-    chances = [chance_skill(p['skill'] - opp) for opp in p['opponent_history']]
+    player_chances = np.vectorize(partial(chance_skill_two, p['skill']))
+    chances = player_chances(p['opponent_history'])
     ax[4].plot(chances, label="True chances")
     ax[4].plot(p["predicted_chances"], label="Predicted chances")
     ax[4].legend()
@@ -129,7 +142,8 @@ def plot_mmr_history(DATAVALUES=6):
 
     # average player
     p = extremes[int(len(extremes) / 2)]
-    chances = [chance_skill(p['skill'] - opp) for opp in p['opponent_history']]
+    player_chances = np.vectorize(partial(chance_skill_two, p['skill']))
+    chances = player_chances(p['opponent_history'])
     ax[3].plot(chances, label="True chances")
     ax[3].plot(p["predicted_chances"], label="Predicted chances")
     ax[3].legend()
@@ -150,17 +164,21 @@ def plot_mmr_history(DATAVALUES=6):
     for player in players:
         mmr = player["mmr_history"]
         opp = player["opponent_history"]
-        p = ax[0].plot(list(range(len(mmr))), mmr, linewidth=0.3)
+        p = ax[0].plot(np.linspace(0, mmr.size - 1, mmr.size),
+                       mmr,
+                       linewidth=0.3)
         ax[0].text(len(mmr) - 0.9,
                    mmr[-1],
                    f'{player["skill"]:.3f}',
                    ha="left",
                    va="center",
                    color=p[0].get_color())
-        p = ax[1].plot(list(range(len(opp))), opp, linewidth=0.3)
-        ax[1].text(len(opp) + 1,
+        p = ax[1].plot(np.linspace(0, opp.size - 1, opp.size),
+                       opp,
+                       linewidth=0.3)
+        ax[1].text(opp.size + 1,
                    opp[-1],
-                   len(set(opp)),
+                   opp.size,
                    ha="left",
                    color=p[0].get_color())
 
@@ -185,16 +203,16 @@ print(f"MMR history plotting finished in {time.time()-start_hist:.3f} seconds")
 
 ### Sort data
 data = [i for i in sorted(data, key=lambda x: x["skill"])]
-skills = [i["skill"] for i in data]
-mmrs = [i["mmr"] for i in data]
+skills = np.array([i["skill"] for i in data])
+mmrs = np.array([i["mmr"] for i in data])
 
 
 def plot_other():
     ## MMR - SKILL
     plt.figure().clear()
     plt.plot(skills, mmrs)
-    plt.plot([min(skills), max(skills)],
-             [min(skills), max(skills)],
+    plt.plot([np.min(skills), np.max(skills)],
+             [np.min(skills), np.max(skills)],
              color="black",
              linewidth=0.5)
     plt.title(f"MMR - Skill relation ({GAMES/PLAYERS:.0f} games/player)")
@@ -216,6 +234,7 @@ def plot_other():
 
     # Plotting lines where a player has 75% chance to win against previous line
     # More lines means more diverse population of skills
+    # ** ideally calculate distance in points and then plot (much faster)
     lines = 0
     previous_skill = None
     for skill in skills:
@@ -263,7 +282,7 @@ def plot_other():
     ax2 = ax1.twinx()
     ndata = [i for i in sorted(data, key=lambda x: x["mmr"])]
     nmmrs = [i["mmr"] for i in ndata]
-    histories = [len(i["opponent_history"]) for i in ndata]
+    histories = [i["opponent_history"].size for i in ndata]
     ax2.scatter(nmmrs, histories, s=2)
     ax2.set_ylabel(
         f"Game count per player ({min(histories)}-{max(histories)})",
@@ -275,7 +294,7 @@ def plot_other():
 
     ## Games played
     plt.figure().clear()
-    games_played = [len(i["opponent_history"]) for i in data]
+    games_played = [i["opponent_history"].size for i in data]
     sns.histplot(games_played, element='poly')
     plt.xlabel("Games played")
     plt.ylabel("Player count")
@@ -287,5 +306,5 @@ def plot_other():
 
 
 plot_other()
-print(f"Plotting finished in {time.time()-start_plotting:.3f} seconds")
+print(f"Other plotting finished in {time.time()-start_plotting:.3f} seconds")
 print(f"Total time: {time.time()-start:.3f} seconds")
