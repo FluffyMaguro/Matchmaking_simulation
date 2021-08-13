@@ -246,6 +246,6 @@ std::vector<Player> run_sim(int players, int iterations)
     Simulation simulation(strategy);
     simulation.add_players(players);
     simulation.play_games(iterations);
-    print("Simulation finished in", t.ms() / 1000, "seconds");
+    print("Simulation finished in", t.s(), "seconds");
     return simulation.players;
 }

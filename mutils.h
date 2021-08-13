@@ -163,4 +163,9 @@ public:
         std::chrono::duration<double, std::milli> ms_double = std::chrono::high_resolution_clock::now() - start;
         return ms_double.count();
     }
+
+    double s()
+    {
+        return ms()/1000;
+    }
 };

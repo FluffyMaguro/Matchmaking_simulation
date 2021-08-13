@@ -12,7 +12,7 @@ static char module_docstring[] =
 PyObject *get_player_data(const Player &p)
 {
     // All arrays of the same size
-    int size = p.opponent_history.size();
+    size_t size = p.opponent_history.size();
 
     // Allocate data for c-arrays
     double *c_opponent_history = new double[size];
@@ -51,7 +51,7 @@ static PyObject *run_simulation(PyObject *self, PyObject *args)
     {
         PyList_Append(Data, Py_BuildValue("O", get_player_data(p)));
     }
-    print("Creating Python objects for players finished in", t.ms() / 1000, "seconds");
+    print("Creating Python objects for players finished in", t.s(), "seconds");
     return Data;
 }
 

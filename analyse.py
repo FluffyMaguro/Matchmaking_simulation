@@ -1,7 +1,7 @@
 import math
 import statistics
 import time
-from functools import partial
+from functools import partial, lru_cache
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -22,6 +22,7 @@ start_plotting = time.time()
 plt.rcParams['figure.dpi'] = 150
 
 
+@lru_cache()
 def chance_skill(diff):
     """ Returns the chance for a player to win based on skill difference"""
     return 1 / (1 + math.exp(-diff / 173.718))  # ELO points
@@ -78,8 +79,7 @@ print(f"Prediction plotting finished in {time.time()-start_pred:.3f} seconds")
 ## PLAYER HISTORY
 def plot_mmr_history(DATAVALUES=6):
     plt.figure().clear()
-    # ** posibly replace set here with np.unique (test perf on bigger sets)
-    unique_opponents = [len(set(i["opponent_history"])) for i in data]
+    unique_opponents = [len(np.unique(i["opponent_history"])) for i in data]
     extremes = [
         p for p in sorted(data, key=lambda x: x["skill"], reverse=True)
     ]
@@ -234,7 +234,6 @@ def plot_other():
 
     # Plotting lines where a player has 75% chance to win against previous line
     # More lines means more diverse population of skills
-    # ** ideally calculate distance in points and then plot (much faster)
     lines = 0
     previous_skill = None
     for skill in skills:
