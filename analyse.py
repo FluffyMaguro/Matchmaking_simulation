@@ -13,9 +13,8 @@ start = time.time()
 
 ### RUN SIMULATION
 PLAYERS = 20000
-GAMES = 100000000
-data = psimulation.run_simulation(PLAYERS, GAMES)
-prediction_differences = psimulation.export_prediction_diff()
+GAMES = 20000000
+data, prediction_differences = psimulation.run_simulation(PLAYERS, GAMES)
 
 ### PLOTTING
 start_plotting = time.time()
@@ -52,12 +51,12 @@ def plot_prediction_differences():
     fig, ax = plt.subplots(1, 1)
     ax.text(0,
             means[0] + 0.01,
-            f"{means[0]:.2f}",
+            f"{means[0]:.3f}",
             color="#1968cf",
             ha="center")
     ax.text(x[-1],
             means[-1] + 0.01,
-            f"{means[-1]:.2f}",
+            f"{means[-1]:.3f}",
             color="#1968cf",
             ha="center")
 
@@ -66,7 +65,9 @@ def plot_prediction_differences():
     ax.set_ylabel("Error in matchmaking")
     ax.set_xlabel("Games")
     plt.grid(alpha=0.2)
-    ax.set_title("How matchmaking improves (moving average of errors)")
+    ax.set_title(
+        f"How matchmaking improves [{np.sum(prediction_differences)/100000:.3f}]"
+    )
     plt.tight_layout()
     plt.savefig("img/prediction_differences.png")
 
@@ -74,6 +75,8 @@ def plot_prediction_differences():
 start_pred = time.time()
 plot_prediction_differences()
 print(f"Prediction plotting finished in {time.time()-start_pred:.3f} seconds")
+
+exit()
 
 
 ## PLAYER HISTORY

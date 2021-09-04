@@ -4,13 +4,14 @@
 #include <chrono>
 #include <random>
 #include <cmath>
+#include <algorithm>
 
 #include "mutils.h" // random helper functions
 
-std::vector<double> prediction_difference;
-
 //
 // PLAYER CLASS
+// I could be more memory efficient if I save histories to a Game class instead of players.
+// Right now there is a duplication of data (for two players)
 //
 class Player
 {
@@ -45,7 +46,7 @@ class MatchmakingStrategy
 {
 public:
     virtual bool good_match(Player &p1, Player &p2) = 0;
-    virtual void update_mmr(Player &winner, Player &loser, double actual_chances) = 0;
+    virtual double update_mmr(Player &winner, Player &loser, double actual_chances) = 0;
 };
 
 //
@@ -64,18 +65,16 @@ public:
     }
 
     // Updates MMR
-    void update_mmr(Player &winner, Player &loser, double actual_chances)
+    double update_mmr(Player &winner, Player &loser, double actual_chances)
     {
         winner.opponent_history.push_back(loser.skill);
         winner.mmr_history.push_back(winner.mmr);
         loser.opponent_history.push_back(winner.skill);
         loser.mmr_history.push_back(loser.mmr);
 
-        winner.predicted_chances.push_back(0.5);
-        loser.predicted_chances.push_back(0.5);
-
         winner.mmr += offset;
         loser.mmr -= offset;
+        return 0.5;
     }
 };
 
@@ -95,7 +94,7 @@ public:
     }
 
     // Updates MMR for
-    void update_mmr(Player &winner, Player &loser, double actual_chances)
+    double update_mmr(Player &winner, Player &loser, double actual_chances)
     {
         winner.opponent_history.push_back(loser.skill);
         winner.mmr_history.push_back(winner.mmr);
@@ -113,7 +112,70 @@ public:
         winner.mmr += K * El;
         loser.mmr -= K * El;
 
-        prediction_difference.push_back(std::abs(actual_chances - Ew));
+        return std::abs(actual_chances - Ew);
+    }
+};
+
+//
+// Tweaked ELO MATCHMAKING STRATEGY
+//
+class Tweaked_ELO_strategy : public MatchmakingStrategy
+{
+    double K = 6;
+    double KK = 135;
+    int game_div = 15;
+
+public:
+    Tweaked_ELO_strategy() {}
+    Tweaked_ELO_strategy(double pK, double pKK, int pgame_div)
+    {
+        if (pK != -1)
+        {
+            K = pK;
+        }
+        if (pKK != -1)
+        {
+            KK = pKK;
+        }
+        if (pgame_div != -1)
+        {
+            game_div = pgame_div;
+        }
+    }
+    // Checks if the match between players would be a good based on MMR
+    // More complicated version would take into account search time, latency, etc.
+    bool good_match(Player &p1, Player &p2)
+    {
+        return std::abs(p1.mmr - p2.mmr) < 120.0; // 35 MMR → 55% ; 70 → 60% ; 120 → 66%; 191 → 75%
+    }
+
+    // Updates MMR for
+    double update_mmr(Player &winner, Player &loser, double actual_chances)
+    {
+        winner.opponent_history.push_back(loser.skill);
+        winner.mmr_history.push_back(winner.mmr);
+        loser.opponent_history.push_back(winner.skill);
+        loser.mmr_history.push_back(loser.mmr);
+
+        // Chances of winning for the winner and loser. /400 is changed to 173. to use exp instead of pow(10,)
+        double Ew = 1 / (1 + exp((loser.mmr - winner.mmr) / 173.718));
+        double El = 1 - Ew;
+
+        winner.predicted_chances.push_back(Ew);
+        loser.predicted_chances.push_back(El);
+
+        // Simply update coeficient based on number of games
+        // Fewer games → faster update
+        // More games → slower update
+        int winner_games = static_cast<int>(winner.opponent_history.size()) - 1;
+        int loser_games = static_cast<int>(winner.opponent_history.size()) - 1;
+
+        double winner_coef = K + KK * exp(-winner_games / game_div);
+        double loser_coef = K + KK * exp(-loser_games / game_div);
+        winner.mmr += winner_coef * El;
+        loser.mmr -= loser_coef * El;
+
+        return std::abs(actual_chances - Ew);
     }
 };
 
@@ -128,12 +190,15 @@ class Simulation
 
 public:
     std::vector<Player> players;
+    std::vector<double> prediction_difference;
+
     Simulation(MatchmakingStrategy &strat)
     {
         strategy = &strat;
         // Initialize RNG generation for players
-        // std::default_random_engine new_RNG(std::chrono::steady_clock::now().time_since_epoch().count()); //fixed seed for now
-        std::default_random_engine new_RNG(1);
+        int seed = static_cast<int>(std::chrono::steady_clock::now().time_since_epoch().count());
+        // seed = 1;
+        std::default_random_engine new_RNG(seed);
         RNG = new_RNG;
         std::normal_distribution<> new_skill_distribution(2820 / 2.2, 800 / 2.2); // mean, std
         skill_distribution = new_skill_distribution;
@@ -147,6 +212,10 @@ public:
             Player p(skill_distribution(RNG));
             players.push_back(p);
         }
+    }
+    void add_players(double number)
+    {
+        add_players(static_cast<int>(number));
     }
 
     // Removes `number` of players from the simulation (from the start of players)
@@ -162,19 +231,27 @@ public:
     double get_chance(Player &p1, Player &p2)
     {
         // This depends on how we have chosen to distribute skill
-        double chance = 1 / (1 + exp((p2.skill - p1.skill) / 173.718)); // ELO points equivalent
-        // printf("P1s: %f vs P2s: %f --> %f%% for P1 \n", p1.skill, p2.skill, 100 * chance);
-        return chance;
+        return 1 / (1 + exp((p2.skill - p1.skill) / 173.718)); // ELO points equivalent
     }
 
     void resolve_game(Player &p1, Player &p2)
     {
         // printf("Playing a game between #%p (%i MMR) and #%p (%i MMR)\n", &p1, p1.mmr, &p2, p2.mmr);
         double p1_chance = get_chance(p1, p2);
+        double pred_diff;
         if (RNG() % 10000 <= 10000 * p1_chance)
-            strategy->update_mmr(p1, p2, p1_chance);
+            pred_diff = strategy->update_mmr(p1, p2, p1_chance);
         else
-            strategy->update_mmr(p2, p1, 1 - p1_chance);
+            pred_diff = strategy->update_mmr(p2, p1, 1 - p1_chance);
+
+        try
+        {
+            prediction_difference.push_back(pred_diff);
+        }
+        catch (...)
+        {
+            print("Failed to pushback to prediction_difference. Size:", prediction_difference.size());
+        }
     }
 
     // Runs the simulation for `number` of games
@@ -183,16 +260,17 @@ public:
         // bool found_opponent;
         int player, opponent;
         int games_played = 0;
+        int players_num = players.size();
 
         while (games_played < number)
         {
             // Pick a random player
-            player = RNG() % players.size();
+            player = RNG() % players_num;
 
             // Pick a random opponent
             for (int tries = 0; tries < 10000; tries++)
             {
-                opponent = RNG() % players.size();
+                opponent = RNG() % players_num;
                 if (opponent == player) // we don't want the same player
                     continue;
                 if (strategy->good_match(players[player], players[opponent]))
@@ -203,6 +281,11 @@ public:
                 }
             }
         }
+    }
+
+    void play_games(double number)
+    {
+        play_games(static_cast<int>(number));
     }
 };
 
@@ -234,18 +317,29 @@ void save_player_data(const std::vector<Player> &players)
     }
 }
 
-std::vector<double> get_prediction_diff()
-{
-    return prediction_difference;
-}
-
-std::vector<Player> run_sim(int players, int iterations)
+// Creates simulation, runs it, and returns a reference to it
+Simulation *run_sim(int players, int iterations, int sp1, int sp2, int sp3, bool gradual = false)
 {
     Timeit t;
-    ELO_strategy strategy;
-    Simulation simulation(strategy);
-    simulation.add_players(players);
-    simulation.play_games(iterations);
+    Tweaked_ELO_strategy strategy(sp1, sp2, sp3);
+    Simulation *sim = new Simulation(strategy);
+    if (gradual)
+    {
+        print("Gradual player addup");
+        sim->add_players(players * 0.5);
+        sim->play_games(iterations * 0.4);
+        sim->add_players(players * 0.3);
+        sim->play_games(iterations * 0.4);
+        sim->add_players(players * 0.2);
+        sim->play_games(iterations * 0.2);
+    }
+    else
+    {
+        print("All players at once");
+        sim->add_players(players);
+        sim->play_games(iterations);
+    }
+
     print("Simulation finished in", t.s(), "seconds");
-    return simulation.players;
+    return sim;
 }

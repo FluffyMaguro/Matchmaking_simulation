@@ -1,11 +1,12 @@
-main.exe
 .vscode/*
-test.exe
+*.exe
+*.bat
 test.cpp
 log.txt
-_vsc.bat
 data.json
 psimulation.cp38-win_amd64.pyd
 build/*
 cache
 test.py
+NOTES.md
+*.dat

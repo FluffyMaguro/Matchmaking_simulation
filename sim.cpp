@@ -37,42 +37,80 @@ PyObject *get_player_data(const Player &p)
 // Runs simulation and returns its data
 static PyObject *run_simulation(PyObject *self, PyObject *args)
 {
+    // simulation parameters and three strategy parameters
     int iterations, players;
-    if (!PyArg_ParseTuple(args, "ii", &players, &iterations))
+    int sp1 = -1;
+    int sp2 = -1;
+    int sp3 = -1;
+    if (!PyArg_ParseTuple(args, "ii|iii", &players, &iterations, &sp1, &sp2, &sp3))
         return NULL;
 
     // Run simulation
-    std::vector<Player> &player_data = run_sim(players, iterations);
+    Simulation *sim = run_sim(players, iterations, sp1, sp2, sp3);
+    Timeit t;
+
+    // Get data for players
+    PyObject *Result_Players = PyList_New(0);
+    for (const Player &p : sim->players)
+    {
+        PyList_Append(Result_Players, Py_BuildValue("O", get_player_data(p)));
+    }
+
+    //Get prediction data
+    double *carray = new double[sim->prediction_difference.size()];
+    std::copy(sim->prediction_difference.begin(), sim->prediction_difference.end(), carray);
+    npy_intp m = sim->prediction_difference.size();
+    PyObject *Result_Predictions = PyArray_SimpleNewFromData(1, &m, NPY_DOUBLE, carray);
 
     // Prepare data to be send away
-    Timeit t;
-    PyObject *Data = PyList_New(0);
-    for (const Player &p : player_data)
-    {
-        PyList_Append(Data, Py_BuildValue("O", get_player_data(p)));
-    }
+    PyObject *Result = PyList_New(0);
+    PyList_Append(Result, Result_Players);
+    PyList_Append(Result, Result_Predictions);
+
     print("Creating Python objects for players finished in", t.s(), "seconds");
-    return Data;
+    delete sim;
+    return Result;
 }
 
-// Exports prediction diff as a numpy array
-static PyObject *export_prediction_diff(PyObject *self, PyObject *args)
+// Runs parameter optimization and returns its data
+static PyObject *run_parameter_optimization(PyObject *self, PyObject *args)
 {
-    std::vector<double> &prediction_diff = get_prediction_diff();
-    // Allocate memory for a new array
-    double *carray = new double[prediction_diff.size()];
-    // Copy values to it
-    std::copy(prediction_diff.begin(), prediction_diff.end(), carray);
-    // Specify its dimension/size in them
-    npy_intp m = prediction_diff.size();
-    // Create numpy array and return
-    return PyArray_SimpleNewFromData(1, &m, NPY_DOUBLE, carray);
+    // simulation parameters and three strategy parameters
+    int iterations, players;
+    int sp1 = -1;
+    int sp2 = -1;
+    int sp3 = -1;
+    if (!PyArg_ParseTuple(args, "ii|iii", &players, &iterations, &sp1, &sp2, &sp3))
+        return NULL;
+
+    // Run simulation
+    Simulation *sim = run_sim(players, iterations, sp1, sp2, sp3);
+
+    // Get prediction sums
+    const int LATE_GAMES = 1000;
+    double pred_sum = 0;
+    double pred_sum_late = 0;
+    for (int i = 0; i < sim->prediction_difference.size(); i++)
+    {
+        pred_sum += sim->prediction_difference[i];
+        if (i + LATE_GAMES >= sim->prediction_difference.size())
+        {
+            pred_sum_late += sim->prediction_difference[i];
+        }
+    }
+
+    PyObject *Result = PyList_New(0);
+    PyList_Append(Result, Py_BuildValue("f", pred_sum / 100000));
+    PyList_Append(Result, Py_BuildValue("f", pred_sum_late / LATE_GAMES));
+
+    delete sim;
+    return Result;
 }
 
 /* Module methods (how it's called for python | how it's called here | arg-type | docstring) METH_VARARGS/METH_KEYWORDS/METH_NOARGS */
 static PyMethodDef module_methods[] = {
     {"run_simulation", run_simulation, METH_VARARGS, "Runs a simulation with `players` and `iterations`"},
-    {"export_prediction_diff", export_prediction_diff, METH_NOARGS, "get prediction differences (numpy array)"},
+    {"run_parameter_optimization", run_parameter_optimization, METH_VARARGS, "Runs parameter optimization`"},
     {NULL, NULL, 0, NULL} // Last needs to be this
 };
 
