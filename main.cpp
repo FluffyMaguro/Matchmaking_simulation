@@ -5,6 +5,7 @@
 #include <random>
 #include <cmath>
 #include <algorithm>
+#include <memory>
 
 #include "mutils.h" // random helper functions
 
@@ -186,15 +187,15 @@ class Simulation
 {
     std::default_random_engine RNG;
     std::normal_distribution<> skill_distribution;
-    MatchmakingStrategy *strategy;
+    std::unique_ptr<MatchmakingStrategy> strategy;
 
 public:
     std::vector<Player> players;
     std::vector<double> prediction_difference;
 
-    Simulation(MatchmakingStrategy &strat)
+    Simulation(std::unique_ptr<MatchmakingStrategy> strat)
     {
-        strategy = &strat;
+        strategy = std::move(strat); // Move pointer from argument unique smart pointer to strategy
         // Initialize RNG generation for players
         int seed = static_cast<int>(std::chrono::steady_clock::now().time_since_epoch().count());
         // seed = 1;
@@ -202,6 +203,11 @@ public:
         RNG = new_RNG;
         std::normal_distribution<> new_skill_distribution(2820 / 2.2, 800 / 2.2); // mean, std
         skill_distribution = new_skill_distribution;
+    }
+
+    ~Simulation()
+    {
+        // delete strategy; //not necessary since we are using unique_ptr
     }
 
     // Adds `number` of players to the simulation
@@ -318,11 +324,31 @@ void save_player_data(const std::vector<Player> &players)
 }
 
 // Creates simulation, runs it, and returns a reference to it
-Simulation *run_sim(int players, int iterations, int sp1, int sp2, int sp3, bool gradual = false)
+std::unique_ptr<Simulation> run_sim(int players, int iterations, int sp1, int sp2, int sp3, std::string strategy_type, bool gradual = false)
 {
     Timeit t;
-    Tweaked_ELO_strategy strategy(sp1, sp2, sp3);
-    Simulation *sim = new Simulation(strategy);
+    std::unique_ptr<MatchmakingStrategy> strategy;
+    if ((strategy_type == "tweaked_elo") || (strategy_type == "default"))
+    {
+        strategy = std::make_unique<Tweaked_ELO_strategy>(sp1, sp2, sp3);
+        print("Creating tweaked ELO strategy", sp1, sp2, sp3);
+    }
+    else if (strategy_type == "elo")
+    {
+        strategy = std::make_unique<ELO_strategy>();
+        print("Creating ELO strategy");
+    }
+    else if (strategy_type == "naive")
+    {
+        strategy = std::make_unique<Naive_strategy>();
+        print("Creating naive strategy");
+    }
+    else
+    {
+        print("ERROR: Invalid strategy type!!!");
+    }
+
+    std::unique_ptr<Simulation> sim = std::make_unique<Simulation>(std::move(strategy));
     if (gradual)
     {
         print("Gradual player addup");

@@ -34,19 +34,27 @@ PyObject *get_player_data(const Player &p)
     return Py_BuildValue("{sdsdsOsOsO}", "skill", p.skill, "mmr", p.mmr, "opponent_history", opponent_history, "mmr_history", mmr_history, "predicted_chances", predicted_chances);
 }
 
-// Runs simulation and returns its data
-static PyObject *run_simulation(PyObject *self, PyObject *args)
+// Initialize and run simulation based on given arguments
+std::unique_ptr<Simulation> initialize_simulation(PyObject *args)
 {
     // simulation parameters and three strategy parameters
     int iterations, players;
     int sp1 = -1;
     int sp2 = -1;
     int sp3 = -1;
-    if (!PyArg_ParseTuple(args, "ii|iii", &players, &iterations, &sp1, &sp2, &sp3))
+    const char *strategy_type = "default";
+    if (!PyArg_ParseTuple(args, "ii|siii", &players, &iterations, &strategy_type, &sp1, &sp2, &sp3))
         return NULL;
 
     // Run simulation
-    Simulation *sim = run_sim(players, iterations, sp1, sp2, sp3);
+    std::string strategy_type_s(strategy_type);
+    return run_sim(players, iterations, sp1, sp2, sp3, strategy_type_s);
+}
+
+// Runs simulation and returns its data
+static PyObject *run_simulation(PyObject *self, PyObject *args)
+{
+    std::unique_ptr<Simulation> sim = initialize_simulation(args);
     Timeit t;
 
     // Get data for players
@@ -68,24 +76,15 @@ static PyObject *run_simulation(PyObject *self, PyObject *args)
     PyList_Append(Result, Result_Predictions);
 
     print("Creating Python objects for players finished in", t.s(), "seconds");
-    delete sim;
+    // delete sim; // This is not necessary because we are using unique_ptr class and 
+    // that automatically deletes value at pointer location when not used by anything
     return Result;
 }
 
 // Runs parameter optimization and returns its data
 static PyObject *run_parameter_optimization(PyObject *self, PyObject *args)
 {
-    // simulation parameters and three strategy parameters
-    int iterations, players;
-    int sp1 = -1;
-    int sp2 = -1;
-    int sp3 = -1;
-    if (!PyArg_ParseTuple(args, "ii|iii", &players, &iterations, &sp1, &sp2, &sp3))
-        return NULL;
-
-    // Run simulation
-    Simulation *sim = run_sim(players, iterations, sp1, sp2, sp3);
-
+    std::unique_ptr<Simulation> sim = initialize_simulation(args);
     // Get prediction sums
     const int LATE_GAMES = 1000;
     double pred_sum = 0;
@@ -103,7 +102,6 @@ static PyObject *run_parameter_optimization(PyObject *self, PyObject *args)
     PyList_Append(Result, Py_BuildValue("f", pred_sum / 100000));
     PyList_Append(Result, Py_BuildValue("f", pred_sum_late / LATE_GAMES));
 
-    delete sim;
     return Result;
 }
 

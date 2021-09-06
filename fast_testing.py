@@ -9,6 +9,7 @@ PLAYERS = 20000
 GAMES = 20000000
 REPEATS = 6
 CACHE = "parameter_optimization.dat"
+STRATEGY = "tweaked_elo"
 
 
 def load_data():
@@ -34,7 +35,7 @@ def main():
         for KK in range(100, 150, 5):
             for game_div in range(5, 50, 5):
 
-                params = (K, KK, game_div)
+                params = (STRATEGY, K, KK, game_div)
                 if params in data:
                     continue
 
