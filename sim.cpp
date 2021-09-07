@@ -51,6 +51,15 @@ std::unique_ptr<Simulation> initialize_simulation(PyObject *args)
     return run_sim(players, iterations, sp1, sp2, sp3, strategy_type_s);
 }
 
+// Creates a numpy array from a vector of doubles
+PyObject *get_np_array(std::vector<double> vect)
+{
+    double *carray = new double[vect.size()];
+    std::copy(vect.begin(), vect.end(), carray);
+    npy_intp m = vect.size();
+    return PyArray_SimpleNewFromData(1, &m, NPY_DOUBLE, carray);
+}
+
 // Runs simulation and returns its data
 static PyObject *run_simulation(PyObject *self, PyObject *args)
 {
@@ -65,18 +74,19 @@ static PyObject *run_simulation(PyObject *self, PyObject *args)
     }
 
     //Get prediction data
-    double *carray = new double[sim->prediction_difference.size()];
-    std::copy(sim->prediction_difference.begin(), sim->prediction_difference.end(), carray);
-    npy_intp m = sim->prediction_difference.size();
-    PyObject *Result_Predictions = PyArray_SimpleNewFromData(1, &m, NPY_DOUBLE, carray);
+    PyObject *Result_Predictions = get_np_array(sim->prediction_difference);
+
+    //Get match accuracy data
+    PyObject *Result_MatchAccuracy = get_np_array(sim->match_accuracy);
 
     // Prepare data to be send away
     PyObject *Result = PyList_New(0);
     PyList_Append(Result, Result_Players);
     PyList_Append(Result, Result_Predictions);
+    PyList_Append(Result, Result_MatchAccuracy);
 
     print("Creating Python objects for players finished in", t.s(), "seconds");
-    // delete sim; // This is not necessary because we are using unique_ptr class and 
+    // delete sim; // This is not necessary because we are using unique_ptr class and
     // that automatically deletes value at pointer location when not used by anything
     return Result;
 }

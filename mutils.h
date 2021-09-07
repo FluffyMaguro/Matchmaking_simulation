@@ -6,6 +6,8 @@
 #include <vector>
 #include <fstream>
 #include <chrono>
+#include <map>
+#include <unordered_map>
 
 // Functions for creating a string from multiple variables and priting multiple variables
 // Doesn't work on arrays correctly (as they decay to pointers when passed to a function).
@@ -29,17 +31,38 @@ template <typename T>
 std::string str(const std::vector<T> &a)
 {
     if (a.size() == 0)
-    {
         return "[]";
-    }
 
     std::string s = "[";
     for (const T &el : a)
-    {
         s += str(el) + ", ";
-    }
+
     s.erase(s.end() - 2, s.end());
     s += "]";
+    return s;
+}
+
+template <typename A, typename B>
+std::string str(std::unordered_map<A, B> &umap)
+{
+    std::string s = "{";
+    for (auto &el : umap)
+        s += str(el.first) + ": " + str(el.second) + ", ";
+
+    s.erase(s.end() - 2, s.end());
+    s += "}";
+    return s;
+}
+
+template <typename A, typename B>
+std::string str(std::map<A, B> &map)
+{
+    std::string s = "{";
+    for (auto &el : map)
+        s += str(el.first) + ": " + str(el.second) + ", ";
+
+    s.erase(s.end() - 2, s.end());
+    s += "}";
     return s;
 }
 
@@ -138,11 +161,10 @@ void log(A a, std::string filename = "log.txt")
         myfile.close();
     }
     else
-    {
         std::cout << "Can't save to the file. Won't open.\n";
-    }
 }
 
+// A helpful class for easy measuring of time some part of the code takes
 class Timeit
 {
     std::chrono::high_resolution_clock::time_point start;
@@ -166,6 +188,6 @@ public:
 
     double s()
     {
-        return ms()/1000;
+        return ms() / 1000;
     }
 };

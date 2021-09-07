@@ -76,8 +76,6 @@ start_pred = time.time()
 plot_prediction_differences()
 print(f"Prediction plotting finished in {time.time()-start_pred:.3f} seconds")
 
-exit()
-
 
 ## PLAYER HISTORY
 def plot_mmr_history(DATAVALUES=6):

@@ -55,14 +55,33 @@ public:
 //
 class Naive_strategy : public MatchmakingStrategy
 {
-    const int offset = 10; // how much MMR changes for win/loss
+    double offset = 17; // How much MMR changes for win/loss
+    // Multiplier*offset decides whether two player MMR difference is still a good match.
+    // Optimal is very low value (3), but that's unrealistic for getting matches relatively quickly.
+    double multiplier = 100;
 
 public:
+    Naive_strategy()
+    {
+        std::cout << "NAIVE strategy (" << offset << ", " << multiplier << ")";
+    }
+    Naive_strategy(double pK, double pMult)
+    {
+        if (pK != -1)
+        {
+            offset = pK;
+        }
+        if (pMult != -1)
+        {
+            multiplier = pMult;
+        }
+        std::cout << "NAIVE strategy (" << offset << ", " << multiplier << ")";
+    }
     // Checks if the match between players would be a good based on MMR
     // More complicated version would take into account search time, latency, etc.
     bool good_match(Player &p1, Player &p2)
     {
-        return std::abs(p1.mmr - p2.mmr) < offset * 5;
+        return std::abs(p1.mmr - p2.mmr) < offset * multiplier;
     }
 
     // Updates MMR
@@ -75,7 +94,7 @@ public:
 
         winner.mmr += offset;
         loser.mmr -= offset;
-        return 0.5;
+        return std::abs(actual_chances - 0.5);
     }
 };
 
@@ -84,9 +103,21 @@ public:
 //
 class ELO_strategy : public MatchmakingStrategy
 {
-    const double K = 10;
+    double K = 7;
 
 public:
+    ELO_strategy()
+    {
+        std::cout << "ELO strategy (" << K << ")";
+    }
+    ELO_strategy(double pK)
+    {
+        if (pK != -1)
+        {
+            K = pK;
+        }
+        std::cout << "ELO strategy (" << K << ")";
+    }
     // Checks if the match between players would be a good based on MMR
     // More complicated version would take into account search time, latency, etc.
     bool good_match(Player &p1, Player &p2)
@@ -127,7 +158,10 @@ class Tweaked_ELO_strategy : public MatchmakingStrategy
     int game_div = 15;
 
 public:
-    Tweaked_ELO_strategy() {}
+    Tweaked_ELO_strategy()
+    {
+        std::cout << "Tweaked_ELO strategy (" << K << ", " << KK << ", " << game_div << ")";
+    }
     Tweaked_ELO_strategy(double pK, double pKK, int pgame_div)
     {
         if (pK != -1)
@@ -142,6 +176,7 @@ public:
         {
             game_div = pgame_div;
         }
+        std::cout << "Tweaked_ELO strategy (" << K << ", " << KK << ", " << game_div << ")";
     }
     // Checks if the match between players would be a good based on MMR
     // More complicated version would take into account search time, latency, etc.
@@ -192,15 +227,13 @@ class Simulation
 public:
     std::vector<Player> players;
     std::vector<double> prediction_difference;
+    std::vector<double> match_accuracy;
 
     Simulation(std::unique_ptr<MatchmakingStrategy> strat)
     {
         strategy = std::move(strat); // Move pointer from argument unique smart pointer to strategy
-        // Initialize RNG generation for players
         int seed = static_cast<int>(std::chrono::steady_clock::now().time_since_epoch().count());
-        // seed = 1;
-        std::default_random_engine new_RNG(seed);
-        RNG = new_RNG;
+        RNG.seed(seed);
         std::normal_distribution<> new_skill_distribution(2820 / 2.2, 800 / 2.2); // mean, std
         skill_distribution = new_skill_distribution;
     }
@@ -242,8 +275,8 @@ public:
 
     void resolve_game(Player &p1, Player &p2)
     {
-        // printf("Playing a game between #%p (%i MMR) and #%p (%i MMR)\n", &p1, p1.mmr, &p2, p2.mmr);
         double p1_chance = get_chance(p1, p2);
+        match_accuracy.push_back(std::abs(p1_chance - 0.5));
         double pred_diff;
         if (RNG() % 10000 <= 10000 * p1_chance)
             pred_diff = strategy->update_mmr(p1, p2, p1_chance);
@@ -329,29 +362,18 @@ std::unique_ptr<Simulation> run_sim(int players, int iterations, int sp1, int sp
     Timeit t;
     std::unique_ptr<MatchmakingStrategy> strategy;
     if ((strategy_type == "tweaked_elo") || (strategy_type == "default"))
-    {
         strategy = std::make_unique<Tweaked_ELO_strategy>(sp1, sp2, sp3);
-        print("Creating tweaked ELO strategy", sp1, sp2, sp3);
-    }
     else if (strategy_type == "elo")
-    {
-        strategy = std::make_unique<ELO_strategy>();
-        print("Creating ELO strategy");
-    }
+        strategy = std::make_unique<ELO_strategy>(sp1);
     else if (strategy_type == "naive")
-    {
-        strategy = std::make_unique<Naive_strategy>();
-        print("Creating naive strategy");
-    }
+        strategy = std::make_unique<Naive_strategy>(sp1, sp2);
     else
-    {
         print("ERROR: Invalid strategy type!!!");
-    }
 
     std::unique_ptr<Simulation> sim = std::make_unique<Simulation>(std::move(strategy));
     if (gradual)
     {
-        print("Gradual player addup");
+        std::cout << " | Add players gradually" << std::endl;
         sim->add_players(players * 0.5);
         sim->play_games(iterations * 0.4);
         sim->add_players(players * 0.3);
@@ -361,7 +383,7 @@ std::unique_ptr<Simulation> run_sim(int players, int iterations, int sp1, int sp
     }
     else
     {
-        print("All players at once");
+        std::cout << " | Add all players at once" << std::endl;
         sim->add_players(players);
         sim->play_games(iterations);
     }
