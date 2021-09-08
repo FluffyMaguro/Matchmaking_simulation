@@ -69,17 +69,11 @@ static PyObject *run_simulation(PyObject *self, PyObject *args)
     // Get data for players
     PyObject *Result_Players = PyList_New(0);
     for (const Player &p : sim->players)
-    {
         PyList_Append(Result_Players, Py_BuildValue("O", get_player_data(p)));
-    }
 
-    //Get prediction data
     PyObject *Result_Predictions = get_np_array(sim->prediction_difference);
-
-    //Get match accuracy data
     PyObject *Result_MatchAccuracy = get_np_array(sim->match_accuracy);
 
-    // Prepare data to be send away
     PyObject *Result = PyList_New(0);
     PyList_Append(Result, Result_Players);
     PyList_Append(Result, Result_Predictions);
@@ -103,15 +97,12 @@ static PyObject *run_parameter_optimization(PyObject *self, PyObject *args)
     {
         pred_sum += sim->prediction_difference[i];
         if (i + LATE_GAMES >= sim->prediction_difference.size())
-        {
             pred_sum_late += sim->prediction_difference[i];
-        }
     }
 
     PyObject *Result = PyList_New(0);
     PyList_Append(Result, Py_BuildValue("f", pred_sum / 100000));
     PyList_Append(Result, Py_BuildValue("f", pred_sum_late / LATE_GAMES));
-
     return Result;
 }
 

@@ -13,8 +13,9 @@ start = time.time()
 
 ### RUN SIMULATION
 PLAYERS = 20000
-GAMES = 20000000
-data, prediction_differences = psimulation.run_simulation(PLAYERS, GAMES)
+GAMES = 100000000
+data, prediction_differences, match_accuracy = psimulation.run_simulation(
+    PLAYERS, GAMES, "tweaked_elo")
 
 ### PLOTTING
 start_plotting = time.time()

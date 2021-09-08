@@ -1,7 +1,8 @@
+import time
+
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import numpy as np
-import time
 
 import psimulation
 
@@ -38,9 +39,9 @@ for idx, strategy in enumerate(strategy_types):
     match_accuracy = smooth(match_accuracy, BINS)
 
     # Plot & save legend
-    p = ax[1].plot(x, match_accuracy)
+    p = ax[1].plot(x * GAMES / BINS, match_accuracy)
     color = p[0].get_color()
-    ax[0].plot(x, prediction_differences, color=color)
+    ax[0].plot(x * GAMES / BINS, prediction_differences, color=color)
 
 ax[0].set_title(
     f"How a matchmaking strategy gets better at predicting outcomes")

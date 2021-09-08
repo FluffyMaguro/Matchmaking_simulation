@@ -68,13 +68,9 @@ public:
     Naive_strategy(double pK, double pMult)
     {
         if (pK != -1)
-        {
             offset = pK;
-        }
         if (pMult != -1)
-        {
             multiplier = pMult;
-        }
         std::cout << "NAIVE strategy (" << offset << ", " << multiplier << ")";
     }
     // Checks if the match between players would be a good based on MMR
@@ -113,9 +109,7 @@ public:
     ELO_strategy(double pK)
     {
         if (pK != -1)
-        {
             K = pK;
-        }
         std::cout << "ELO strategy (" << K << ")";
     }
     // Checks if the match between players would be a good based on MMR
@@ -140,7 +134,6 @@ public:
         winner.predicted_chances.push_back(Ew);
         loser.predicted_chances.push_back(El);
 
-        // printf("Winner (%f) | Loser (%f) | Expected: %f Actual: %f | +%f \n", winner.mmr, loser.mmr, Ew, actual_chances, K * El);
         winner.mmr += K * El;
         loser.mmr -= K * El;
 
@@ -165,17 +158,11 @@ public:
     Tweaked_ELO_strategy(double pK, double pKK, int pgame_div)
     {
         if (pK != -1)
-        {
             K = pK;
-        }
         if (pKK != -1)
-        {
             KK = pKK;
-        }
         if (pgame_div != -1)
-        {
             game_div = pgame_div;
-        }
         std::cout << "Tweaked_ELO strategy (" << K << ", " << KK << ", " << game_div << ")";
     }
     // Checks if the match between players would be a good based on MMR
@@ -327,34 +314,6 @@ public:
         play_games(static_cast<int>(number));
     }
 };
-
-// Saves player data into a json file for additional analysis
-// Extremely slow to create a string or write (e.g 250MB). C-extension for Python is much faster.
-void save_player_data(const std::vector<Player> &players)
-{
-    std::string s = "[\n";
-
-    // Get player data
-    for (const Player &p : players)
-    {
-        s += str("{\"skill\": ", p.skill, ", \"mmr\": ", p.mmr, ", \"opponent_history\": ", str(p.opponent_history));
-        s += str(", \"mmr_history\": ", str(p.mmr_history), ", \"predicted_chances\": ", str(p.predicted_chances), "},\n");
-    }
-    s.erase(s.end() - 2, s.end());
-    s += "\n]";
-
-    // Save data
-    std::ofstream myfile("data.json");
-    if (myfile.is_open())
-    {
-        myfile << s << std::endl;
-        myfile.close();
-    }
-    else
-    {
-        print("Failed to save data to json!");
-    }
-}
 
 // Creates simulation, runs it, and returns a reference to it
 std::unique_ptr<Simulation> run_sim(int players, int iterations, int sp1, int sp2, int sp3, std::string strategy_type, bool gradual = false)
