@@ -42,13 +42,14 @@ std::unique_ptr<Simulation> initialize_simulation(PyObject *args)
     int sp1 = -1;
     int sp2 = -1;
     int sp3 = -1;
+    double sp4 = -1;
     const char *strategy_type = "default";
-    if (!PyArg_ParseTuple(args, "ii|siii", &players, &iterations, &strategy_type, &sp1, &sp2, &sp3))
+    if (!PyArg_ParseTuple(args, "ii|siiid", &players, &iterations, &strategy_type, &sp1, &sp2, &sp3, &sp4))
         return NULL;
 
     // Run simulation
     std::string strategy_type_s(strategy_type);
-    return run_sim(players, iterations, sp1, sp2, sp3, strategy_type_s);
+    return run_sim(players, iterations, sp1, sp2, sp3, sp4, strategy_type_s);
 }
 
 // Creates a numpy array from a vector of doubles

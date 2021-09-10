@@ -146,15 +146,15 @@ public:
 //
 class Tweaked_ELO_strategy : public MatchmakingStrategy
 {
+protected:
+    // Moved here so a subclass get access it directly
     double K = 6;
     double KK = 135;
     int game_div = 15;
 
 public:
-    Tweaked_ELO_strategy()
-    {
-        std::cout << "Tweaked_ELO strategy (" << K << ", " << KK << ", " << game_div << ")";
-    }
+    Tweaked_ELO_strategy() {} // This constructor is still ran when creating a subclass of this class
+
     Tweaked_ELO_strategy(double pK, double pKK, int pgame_div)
     {
         if (pK != -1)
@@ -165,11 +165,19 @@ public:
             game_div = pgame_div;
         std::cout << "Tweaked_ELO strategy (" << K << ", " << KK << ", " << game_div << ")";
     }
+
     // Checks if the match between players would be a good based on MMR
     // More complicated version would take into account search time, latency, etc.
     bool good_match(Player &p1, Player &p2)
     {
         return std::abs(p1.mmr - p2.mmr) < 120.0; // 35 MMR → 55% ; 70 → 60% ; 120 → 66%; 191 → 75%
+    }
+
+    // Returns a learning coefficient for the player
+    virtual double get_learning_coefficient(Player &player, Player &other_player)
+    {
+        int games = static_cast<int>(player.opponent_history.size()) - 1;
+        return exp(-games / game_div);
     }
 
     // Updates MMR for
@@ -190,15 +198,46 @@ public:
         // Simply update coeficient based on number of games
         // Fewer games → faster update
         // More games → slower update
-        int winner_games = static_cast<int>(winner.opponent_history.size()) - 1;
-        int loser_games = static_cast<int>(winner.opponent_history.size()) - 1;
-
-        double winner_coef = K + KK * exp(-winner_games / game_div);
-        double loser_coef = K + KK * exp(-loser_games / game_div);
+        double winner_coef = K + KK * get_learning_coefficient(winner, loser);
+        double loser_coef = K + KK * get_learning_coefficient(loser, winner);
         winner.mmr += winner_coef * El;
         loser.mmr -= loser_coef * El;
 
         return std::abs(actual_chances - Ew);
+    }
+};
+
+// Similar to normal ELO strategy but different uncertainity calculation
+class Tweaked2_ELO_strategy : public Tweaked_ELO_strategy
+{
+protected:
+    double KK = 135;
+    int game_div = 15;
+    double coef = 5;
+
+public:
+    Tweaked2_ELO_strategy(double pK, double pKK, int pgame_div, double pcoef)
+    {
+        if (pK != -1)
+            K = pK;
+        if (pKK != -1)
+            KK = pKK;
+        if (pgame_div != -1)
+            game_div = pgame_div;
+        if (pcoef != -1)
+            coef = pcoef;
+        std::cout << "Tweaked2_ELO strategy (" << K << ", " << KK << ", " << game_div << ", " << coef << ")";
+    }
+
+    // Returns uncertainity for the player
+    double get_learning_coefficient(Player &player, Player &other_player)
+    {
+        // The idea here learning lowers as the player gets more games
+        // And playing a new opponent will give you lower learning coefficient (wont lose too many points to him)
+        // But a new player playing an old player gets high learning coefficient (still can gain a lot of points by playing someone solid)
+        int player_games = static_cast<int>(player.opponent_history.size()) - 1;
+        int other_player_games = static_cast<int>(other_player.opponent_history.size()) - 1;
+        return exp(-player_games / 135) * exp(-player_games / (coef * (other_player_games + 1)));
     }
 };
 
@@ -223,11 +262,6 @@ public:
         RNG.seed(seed);
         std::normal_distribution<> new_skill_distribution(2820 / 2.2, 800 / 2.2); // mean, std
         skill_distribution = new_skill_distribution;
-    }
-
-    ~Simulation()
-    {
-        // delete strategy; //not necessary since we are using unique_ptr
     }
 
     // Adds `number` of players to the simulation
@@ -316,12 +350,14 @@ public:
 };
 
 // Creates simulation, runs it, and returns a reference to it
-std::unique_ptr<Simulation> run_sim(int players, int iterations, int sp1, int sp2, int sp3, std::string strategy_type, bool gradual = false)
+std::unique_ptr<Simulation> run_sim(int players, int iterations, int sp1, int sp2, int sp3, double sp4, std::string strategy_type, bool gradual = true)
 {
     Timeit t;
     std::unique_ptr<MatchmakingStrategy> strategy;
     if ((strategy_type == "tweaked_elo") || (strategy_type == "default"))
         strategy = std::make_unique<Tweaked_ELO_strategy>(sp1, sp2, sp3);
+    else if (strategy_type == "tweaked2_elo")
+        strategy = std::make_unique<Tweaked2_ELO_strategy>(sp1, sp2, sp3, sp4);
     else if (strategy_type == "elo")
         strategy = std::make_unique<ELO_strategy>(sp1);
     else if (strategy_type == "naive")

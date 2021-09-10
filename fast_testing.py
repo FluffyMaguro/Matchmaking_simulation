@@ -10,7 +10,7 @@ PLAYERS = 20000
 
 GAMES = 20000000
 REPEATS = 6
-STRATEGY = "naive"
+STRATEGY = "tweaked2_elo"
 
 
 def load_data():
@@ -33,29 +33,32 @@ def main():
     todo = 0
 
     # Add work
-    for K in range(15, 20, 1):
-        for KK in range(1, 5, 1):
-            todo += 1
 
-            params = (STRATEGY, K, KK)
-            if params in data:
-                continue
+    for game_div in range(15, 26, 2):
+        for KK in range(90, 110, 2):
+            for coef in [1]:
+                todo += 1
 
-            for _ in range(REPEATS):
-                results.append(
-                    (params,
-                     pool.submit(psimulation.run_parameter_optimization,
-                                 PLAYERS, GAMES, *params)))
+                params = (STRATEGY, 6, KK, game_div, coef)
+                if params in data:
+                    continue
 
-    print(f"Starting at {todo - len(results)}/{todo}\n")
+                for _ in range(REPEATS):
+                    results.append(
+                        (params,
+                         pool.submit(psimulation.run_parameter_optimization,
+                                     PLAYERS, GAMES, *params)))
+
+    print(f"Starting at {REPEATS*todo - len(results)}/{REPEATS*todo}\n")
 
     # Analyze prediction sums
-    for params, future in results:
+    for idx, (params, future) in enumerate(results):
         if params not in data:
             data[params] = list()
 
         data[params].append(future.result())
         save_data(data)
+        print(f"{idx}/{len(results)}")
 
     # Average over repeats
     for params in data:
