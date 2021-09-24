@@ -148,9 +148,9 @@ class Tweaked_ELO_strategy : public MatchmakingStrategy
 {
 protected:
     // Moved here so a subclass get access it directly
-    double K = 6;
-    double KK = 135;
-    int game_div = 15;
+    double K = 2;
+    double KK = 145;
+    int game_div = 35;
 
 public:
     Tweaked_ELO_strategy() {} // This constructor is still ran when creating a subclass of this class
@@ -176,7 +176,7 @@ public:
     // Returns a learning coefficient for the player
     virtual double get_learning_coefficient(Player &player, Player &other_player)
     {
-        int games = static_cast<int>(player.opponent_history.size()) - 1;
+        double games = static_cast<double>(player.opponent_history.size()) - 1.0;
         return exp(-games / game_div);
     }
 
@@ -211,9 +211,10 @@ public:
 class Tweaked2_ELO_strategy : public Tweaked_ELO_strategy
 {
 protected:
-    double KK = 135;
-    int game_div = 15;
-    double coef = 5;
+    double K = 2;
+    double KK = 100;
+    int game_div = 56;
+    double coef = 0.3;
 
 public:
     Tweaked2_ELO_strategy(double pK, double pKK, int pgame_div, double pcoef)
@@ -237,7 +238,7 @@ public:
         // But a new player playing an old player gets high learning coefficient (still can gain a lot of points by playing someone solid)
         int player_games = static_cast<int>(player.opponent_history.size()) - 1;
         int other_player_games = static_cast<int>(other_player.opponent_history.size()) - 1;
-        return exp(-player_games / 135) * exp(-player_games / (coef * (other_player_games + 1)));
+        return std::min(exp((-coef * other_player_games - player_games) / game_div), 1.0);
     }
 };
 
@@ -320,7 +321,7 @@ public:
         // bool found_opponent;
         int player, opponent;
         int games_played = 0;
-        int players_num = players.size();
+        int players_num = static_cast<int>(players.size());
 
         while (games_played < number)
         {
@@ -350,7 +351,7 @@ public:
 };
 
 // Creates simulation, runs it, and returns a reference to it
-std::unique_ptr<Simulation> run_sim(int players, int iterations, int sp1, int sp2, int sp3, double sp4, std::string strategy_type, bool gradual = true)
+std::unique_ptr<Simulation> run_sim(int players, int iterations, int sp1, int sp2, int sp3, double sp4, std::string strategy_type, bool gradual = false)
 {
     Timeit t;
     std::unique_ptr<MatchmakingStrategy> strategy;

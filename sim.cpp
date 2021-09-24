@@ -1,5 +1,6 @@
 #define PY_SSIZE_T_CLEAN
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSIO
+#include <future>
 #include <Python.h>
 #include <numpy/arrayobject.h>
 #include "main.cpp" // dirty direct include
@@ -92,18 +93,63 @@ static PyObject *run_parameter_optimization(PyObject *self, PyObject *args)
     std::unique_ptr<Simulation> sim = initialize_simulation(args);
     // Get prediction sums
     const int LATE_GAMES = 1000;
-    double pred_sum = 0;
-    double pred_sum_late = 0;
+    double match_sum = 0;
+    double match_sum_late = 0;
     for (int i = 0; i < sim->prediction_difference.size(); i++)
     {
-        pred_sum += sim->prediction_difference[i];
+        match_sum += sim->prediction_difference[i];
         if (i + LATE_GAMES >= sim->prediction_difference.size())
-            pred_sum_late += sim->prediction_difference[i];
+            match_sum_late += sim->prediction_difference[i];
     }
 
     PyObject *Result = PyList_New(0);
-    PyList_Append(Result, Py_BuildValue("f", pred_sum / 100000));
-    PyList_Append(Result, Py_BuildValue("f", pred_sum_late / LATE_GAMES));
+    PyList_Append(Result, Py_BuildValue("f", match_sum / 100000));
+    PyList_Append(Result, Py_BuildValue("f", match_sum_late / LATE_GAMES));
+    return Result;
+}
+
+std::vector<double> parameter_optimization_worker(PyObject *args, int LATE_GAMES)
+{
+    double match_sum = 0;
+    double match_sum_late = 0;
+    std::unique_ptr<Simulation> sim = initialize_simulation(args);
+    // Get prediction sums
+    for (int i = 0; i < sim->prediction_difference.size(); i++)
+    {
+        match_sum += sim->prediction_difference[i];
+        if (i + LATE_GAMES >= sim->prediction_difference.size())
+            match_sum_late += sim->prediction_difference[i];
+    }
+    std::vector<double> out = {match_sum, match_sum_late};
+    return out;
+}
+
+// Runs parameter optimization multithreaded and returns its data
+static PyObject *run_parameter_optimization_nt(PyObject *self, PyObject *args)
+{
+    const int ITERATIONS = 10;
+    const int LATE_GAMES = 1000;
+    double total_match_sum = 0;
+    double total_match_sum_late = 0;
+    std::vector<std::future<std::vector<double>>> futures;
+
+    for (int iter = 0; iter < ITERATIONS; iter++)
+        futures.push_back(std::async(std::launch::async, parameter_optimization_worker, args, LATE_GAMES));
+
+    std::vector<double> results;
+    for (auto &f : futures)
+    {
+        results = f.get();
+        total_match_sum += results[0];
+        total_match_sum_late += results[1];
+    }
+
+    total_match_sum /= ITERATIONS * 100000;
+    total_match_sum_late /= ITERATIONS * LATE_GAMES;
+
+    PyObject *Result = PyList_New(0);
+    PyList_Append(Result, Py_BuildValue("f", total_match_sum));
+    PyList_Append(Result, Py_BuildValue("f", total_match_sum_late));
     return Result;
 }
 
@@ -111,6 +157,7 @@ static PyObject *run_parameter_optimization(PyObject *self, PyObject *args)
 static PyMethodDef module_methods[] = {
     {"run_simulation", run_simulation, METH_VARARGS, "Runs a simulation with `players` and `iterations`"},
     {"run_parameter_optimization", run_parameter_optimization, METH_VARARGS, "Runs parameter optimization`"},
+    {"run_parameter_optimization_nt", run_parameter_optimization_nt, METH_VARARGS, "Runs parameter optimization NT`"},
     {NULL, NULL, 0, NULL} // Last needs to be this
 };
 
