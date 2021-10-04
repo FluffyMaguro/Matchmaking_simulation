@@ -18,7 +18,7 @@ legend = [[], []]
 start = time.time()
 
 
-def smooth(array: np.array, bins: int) -> np.array:
+def smooth(array: np.ndarray, bins: int) -> np.ndarray:
     """ Smooths out a vector by averaging inside bins"""
     L = int(array.size / bins)  # bin length
     new = np.array([])

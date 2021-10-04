@@ -1,8 +1,10 @@
 import os
 import pickle
-from concurrent.futures import ProcessPoolExecutor
-from pprint import pprint
+import time
 import traceback
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, thread
+from pprint import pprint
+
 import psimulation
 from mutate import Mutate
 
@@ -27,16 +29,23 @@ def save_data(data):
 
 
 def old_optimization(REPEATS=1):
-    pool = ProcessPoolExecutor(4)
+    # pool = ProcessPoolExecutor() # 20s | 11.1GB
+    # pool = ProcessPoolExecutor(5) # 19.27s | 4.9GB
+    pool = ThreadPoolExecutor(3)  # 23s | 3.2GB
+    # pool = ThreadPoolExecutor(5) # 23.4s | 4GB
+    # pool = ThreadPoolExecutor(8) # 22s | 6.4GB
+    # pool = ThreadPoolExecutor() # 22.2s | 9GB
+    # pool = ThreadPoolExecutor(12) # 26.7s | 10.3GB
+
     results = []
     data = load_data()
     todo = 0
 
     # Add work
-    for K in range(2, 9, 2):
-        for KK in range(100, 160, 10):
-            for game_div in range(70, 160, 20):
-                for coef in range(1, 10, 3):
+    for K in (2, ):
+        for KK in (100, ):
+            for game_div in (56, ):
+                for coef in range(1, 20, 1):
 
                     todo += 1
 
@@ -219,6 +228,40 @@ def retest(TOP=100, REP=12):
     # pprint(final, width=240, sort_dicts=False)
 
 
+def test():
+    start = time.time()
+    repeats = 50
+    # pool = ProcessPoolExecutor(12)
+    pool = ThreadPoolExecutor(12)
+    results = []
+    params = ("tweaked2_elo", 2, 100, 56, 0.3)
+
+    for _ in range(repeats):
+        results.append((params,
+                        pool.submit(psimulation.run_parameter_optimization_nt,
+                                    PLAYERS, 1000000, *params)))
+
+    for params, future in results:
+        print(future.result())
+
+    # for _ in range(repeats):
+    #     res = psimulation.run_parameter_optimization_nt(PLAYERS, 1000000, *params)
+    #     print(res)
+    """ 
+    no concurrecy:      - 19.8 (0.4 GB)
+    no concurrecy+noGIL:- 19.3 (0.3 GB)
+    3 processes:        - 12.2 (0.8 GB)
+    3 processes+noGIL:  - 12.1 (1.0 GB)
+    3 threads:          - 19.4 (0.4 GB)
+    3 threads+noGIL:    - 12.2 (0.4 GB)
+    12 processes        - 11.0 (2.4 GB)
+    12 processes+noGIL  - 10.6 (1.9 GB)
+    12 threads:         - 20.1 (0.4 GB)
+    12 threads+noGIL:   - 10.7 (1.2 GB)
+    
+    """
+
+
 def main():
     old_optimization(REPEATS=1)
 
@@ -233,6 +276,13 @@ def main():
     # for params in tuple(data)[:20]:
     #     print(params, data[params])
 
+    # result = psimulation.run_parameter_optimization_nt(PLAYERS, 10000000,*("tweaked2_elo", 2, 100, 56, 0.3))
+    # print(result)
+
+    # test()
+
 
 if __name__ == "__main__":
+    start = time.time()
     main()
+    print(f"Everything took {time.time()-start:.2f} seconds")

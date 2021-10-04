@@ -5,7 +5,13 @@ setup(
     name='psimulation',
     version='1.0',
     ext_modules=[
-        Extension("psimulation", ["sim.cpp"],
-                  include_dirs=[numpy.get_include()])
+        Extension(
+            "psimulation",
+            [
+                "cpp/sim.cpp", "cpp/strategies.cpp", "cpp/simulation.cpp",
+                "cpp/main.cpp"
+            ],
+            include_dirs=[numpy.get_include()],
+        )
     ],
 )

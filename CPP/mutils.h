@@ -22,7 +22,7 @@ std::string str(A a)
     return ss.str();
 }
 
-inline std::string str(std::string s)
+inline std::string str(const std::string &s)
 {
     return s;
 }

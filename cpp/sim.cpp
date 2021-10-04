@@ -3,8 +3,8 @@
 #include <future>
 #include <Python.h>
 #include <numpy/arrayobject.h>
-#include "main.cpp" // dirty direct include
-#include "mutils.h" // random helper functions
+#include "main.h"
+#include "mutils.h"
 
 static char module_docstring[] =
     "Module simulating various strategies for matchmaking";
@@ -49,8 +49,7 @@ std::unique_ptr<Simulation> initialize_simulation(PyObject *args)
         return NULL;
 
     // Run simulation
-    std::string strategy_type_s(strategy_type);
-    return run_sim(players, iterations, sp1, sp2, sp3, sp4, strategy_type_s);
+    return run_sim(players, iterations, sp1, sp2, sp3, sp4, strategy_type);
 }
 
 // Creates a numpy array from a vector of doubles
@@ -108,11 +107,14 @@ static PyObject *run_parameter_optimization(PyObject *self, PyObject *args)
     return Result;
 }
 
-std::vector<double> parameter_optimization_worker(PyObject *args, int LATE_GAMES)
+std::vector<double> parameter_optimization_worker(int players, int iterations, int sp1, int sp2, int sp3, double sp4, const std::string &strategy_type, int LATE_GAMES)
 {
     double match_sum = 0;
     double match_sum_late = 0;
-    std::unique_ptr<Simulation> sim = initialize_simulation(args);
+
+    // Run simulation
+    std::unique_ptr<Simulation> sim = std::move(run_sim(players, iterations, sp1, sp2, sp3, sp4, strategy_type));
+
     // Get prediction sums
     for (int i = 0; i < sim->prediction_difference.size(); i++)
     {
@@ -127,14 +129,29 @@ std::vector<double> parameter_optimization_worker(PyObject *args, int LATE_GAMES
 // Runs parameter optimization multithreaded and returns its data
 static PyObject *run_parameter_optimization_nt(PyObject *self, PyObject *args)
 {
-    const int ITERATIONS = 10;
+    const int ITERATIONS = 3;
     const int LATE_GAMES = 1000;
     double total_match_sum = 0;
     double total_match_sum_late = 0;
-    std::vector<std::future<std::vector<double>>> futures;
+
+    // Parse python data here
+    int iterations, players;
+    int sp1 = -1;
+    int sp2 = -1;
+    int sp3 = -1;
+    double sp4 = -1;
+    const char *strategy_type = "default";
+    if (!PyArg_ParseTuple(args, "ii|siiid", &players, &iterations, &strategy_type, &sp1, &sp2, &sp3, &sp4))
+        return NULL;
+
+    // Release GIL here, doesn't hurt Python multiprocessing and improves
+    // performance when using Python multithreading
+    Py_BEGIN_ALLOW_THREADS
+        std::vector<std::future<std::vector<double>>>
+            futures;
 
     for (int iter = 0; iter < ITERATIONS; iter++)
-        futures.push_back(std::async(std::launch::async, parameter_optimization_worker, args, LATE_GAMES));
+        futures.push_back(std::async(std::launch::async, parameter_optimization_worker, players, iterations, sp1, sp2, sp3, sp4, strategy_type, LATE_GAMES));
 
     std::vector<double> results;
     for (auto &f : futures)
@@ -146,11 +163,56 @@ static PyObject *run_parameter_optimization_nt(PyObject *self, PyObject *args)
 
     total_match_sum /= ITERATIONS * 100000;
     total_match_sum_late /= ITERATIONS * LATE_GAMES;
+    Py_END_ALLOW_THREADS
 
-    PyObject *Result = PyList_New(0);
+        PyObject *Result = PyList_New(0);
     PyList_Append(Result, Py_BuildValue("f", total_match_sum));
     PyList_Append(Result, Py_BuildValue("f", total_match_sum_late));
     return Result;
+}
+
+// TESTING CALLING PYTHON FUNCTION
+
+static PyObject *my_python_function = NULL;
+
+static PyObject *
+set_my_python_function(PyObject *dummy, PyObject *args)
+{
+    PyObject *result = NULL;
+    PyObject *temp;
+
+    if (PyArg_ParseTuple(args, "O:set_callback", &temp))
+    {
+        if (!PyCallable_Check(temp))
+        {
+            PyErr_SetString(PyExc_TypeError, "parameter must be callable");
+            return NULL;
+        }
+        Py_XINCREF(temp);               /* Add a reference to new callback */
+        Py_XDECREF(my_python_function); /* Dispose of previous callback */
+        my_python_function = temp;      /* Remember new callback */
+        /* Boilerplate to return "None" */
+        Py_INCREF(Py_None);
+        result = Py_None;
+    }
+    return result;
+}
+
+static PyObject *get_c_twice(PyObject *self, PyObject *args)
+{
+    PyObject *arglist = Py_BuildValue("(i)", 123);
+    PyObject *result = PyObject_CallObject(my_python_function, arglist);
+    Py_DECREF(arglist);
+
+    // Pass error back if there was one
+    if (result == NULL)
+        return NULL;
+
+    // Decref result after parsing it
+    // Py_DECREF(result);
+
+    // Or return it (this usually wouldn't make sense right away)
+    return result;
 }
 
 /* Module methods (how it's called for python | how it's called here | arg-type | docstring) METH_VARARGS/METH_KEYWORDS/METH_NOARGS */
@@ -158,6 +220,8 @@ static PyMethodDef module_methods[] = {
     {"run_simulation", run_simulation, METH_VARARGS, "Runs a simulation with `players` and `iterations`"},
     {"run_parameter_optimization", run_parameter_optimization, METH_VARARGS, "Runs parameter optimization`"},
     {"run_parameter_optimization_nt", run_parameter_optimization_nt, METH_VARARGS, "Runs parameter optimization NT`"},
+    {"set_my_python_function", set_my_python_function, METH_VARARGS, "set_my_python_function doc"},
+    {"get_c_twice", get_c_twice, METH_VARARGS, "METH_VARARGS doc"},
     {NULL, NULL, 0, NULL} // Last needs to be this
 };
 
