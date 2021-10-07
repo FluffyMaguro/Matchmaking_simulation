@@ -6,6 +6,8 @@ from functools import partial, lru_cache
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
+import psutil
+import os
 
 import psimulation
 
@@ -16,6 +18,27 @@ PLAYERS = 20000
 GAMES = 20000000
 data, prediction_differences, match_accuracy = psimulation.run_simulation(
     PLAYERS, GAMES, "tweaked2_elo")
+
+print(prediction_differences[:10])
+process = psutil.Process(os.getpid())
+print(f"Peak memory usage: {process.memory_info().peak_wset/(1024*1024):.0f} MB")
+
+"""
+BASE
+14273 MB    81.82s
+14275 MB    82.23s
+
+RESERVED VECTOR SIZE
+- no change
+
+COPY
+11993 MB                with changing to pointers and carray from std::vector
+11987 MB                when simulation releasing its vector pointers
+7966 MB     89.1423s    when Players vectors directly to carray as well
+
+
+"""
+
 
 ### PLOTTING
 start_plotting = time.time()

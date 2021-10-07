@@ -19,20 +19,31 @@ public:
     // MMR assigned by the matchmaker
     double mmr = 2820 / 2.2;
     // Vector of opponent skills.
-    std::vector<double> opponent_history;
+    std::vector<double> *opponent_history;
     // MMR history
-    std::vector<double> mmr_history;
+    std::vector<double> *mmr_history;
     // Chances predicted by the matchmaker
-    std::vector<double> predicted_chances;
+    std::vector<double> *predicted_chances;
     // Define player and assign him his skill value
     Player(double pskill)
     {
         skill = pskill;
+        opponent_history = new std::vector<double>;
+        mmr_history = new std::vector<double>;
+        predicted_chances = new std::vector<double>;
     };
-};
 
-//Overload my str fuction for printing the player
-inline std::string str(Player p)
-{
-    return str("Player(skill=", p.skill) + str(", mmr=", p.mmr) + str(", opponent_history=", p.opponent_history) + str(", mmr_history=", p.mmr_history, ")");
-}
+    ~Player()
+    {
+        delete opponent_history;
+        delete mmr_history;
+        delete predicted_chances;
+    }
+
+    void lose_ownership()
+    {
+        opponent_history = nullptr;
+        mmr_history = nullptr;
+        predicted_chances = nullptr;
+    }
+};

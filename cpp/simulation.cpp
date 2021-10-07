@@ -6,9 +6,11 @@
 #include <random>
 #include <memory>
 
-
 Simulation::Simulation(std::unique_ptr<MatchmakingStrategy> strat)
 {
+    prediction_difference = new std::vector<double>;
+    match_accuracy = new std::vector<double>;
+
     m_strategy = std::move(strat); // Move pointer from argument unique smart pointer to strategy
     int seed = static_cast<int>(std::chrono::steady_clock::now().time_since_epoch().count());
     m_RNG.seed(seed);
@@ -21,8 +23,7 @@ void Simulation::add_players(int number)
 {
     for (int i = 0; i < number; i++)
     {
-        Player p(m_skill_distribution(m_RNG));
-        players.push_back(p);
+        players.push_back(std::make_unique<Player>(m_skill_distribution(m_RNG)));
     }
 }
 void Simulation::add_players(double number)
@@ -49,7 +50,7 @@ double Simulation::get_chance(Player &p1, Player &p2)
 void Simulation::resolve_game(Player &p1, Player &p2)
 {
     double p1_chance = get_chance(p1, p2);
-    match_accuracy.push_back(std::abs(p1_chance - 0.5));
+    match_accuracy->push_back(std::abs(p1_chance - 0.5));
     double pred_diff;
     if (m_RNG() % 10000 <= 10000 * p1_chance)
         pred_diff = m_strategy->update_mmr(p1, p2, p1_chance);
@@ -58,11 +59,11 @@ void Simulation::resolve_game(Player &p1, Player &p2)
 
     try
     {
-        prediction_difference.push_back(pred_diff);
+        prediction_difference->push_back(pred_diff);
     }
     catch (...)
     {
-        print("Failed to pushback to prediction_difference. Size:", prediction_difference.size());
+        print("Failed to pushback to prediction_difference. Size:", prediction_difference->size());
     }
 }
 
@@ -85,9 +86,9 @@ void Simulation::play_games(int number)
             opponent = m_RNG() % players_num;
             if (opponent == player) // we don't want the same player
                 continue;
-            if (m_strategy->good_match(players[player], players[opponent]))
+            if (m_strategy->good_match(*(players[player]), *(players[opponent])))
             {
-                resolve_game(players[player], players[opponent]);
+                resolve_game(*(players[player]), *(players[opponent]));
                 games_played++;
                 break;
             }

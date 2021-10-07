@@ -9,7 +9,7 @@ import psimulation
 
 ### RUN SIMULATION
 PLAYERS = 20000
-GAMES = 5000000
+GAMES = 1000000
 
 strategy_types = ["naive", "elo", "tweaked_elo", "tweaked2_elo"]
 fig, ax = plt.subplots(4, 1, dpi=120, figsize=(7, 18))

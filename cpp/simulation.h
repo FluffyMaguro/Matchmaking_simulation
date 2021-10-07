@@ -5,6 +5,7 @@
 
 #include <chrono>
 #include <random>
+#include <memory>
 
 class Simulation
 {
@@ -13,9 +14,9 @@ class Simulation
     std::unique_ptr<MatchmakingStrategy> m_strategy;
 
 public:
-    std::vector<Player> players;
-    std::vector<double> prediction_difference;
-    std::vector<double> match_accuracy;
+    std::vector<std::unique_ptr<Player>> players;
+    std::vector<double> *prediction_difference = new std::vector<double>;
+    std::vector<double> *match_accuracy = new std::vector<double>;
 
     Simulation(std::unique_ptr<MatchmakingStrategy> strat);
     void add_players(int number);
@@ -25,4 +26,17 @@ public:
     void resolve_game(Player &p1, Player &p2);
     void play_games(int number);
     void play_games(double number);
+
+    ~Simulation()
+    {
+        delete prediction_difference;
+        delete match_accuracy;
+    }
+
+    // When we are converting vectors directly, lose their reference. 
+    void lose_ownership()
+    {
+        prediction_difference = nullptr;
+        match_accuracy = nullptr;
+    }
 };

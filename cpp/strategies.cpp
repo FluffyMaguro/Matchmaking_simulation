@@ -1,6 +1,7 @@
 #include "strategies.h"
 
 #include <iostream>
+#include <cmath>
 
 //
 // NAIVE MATCHMAKING STRATEGY
@@ -28,10 +29,10 @@ bool Naive_strategy::good_match(Player &p1, Player &p2)
 
 double Naive_strategy::update_mmr(Player &winner, Player &loser, double actual_chances)
 {
-    winner.opponent_history.push_back(loser.skill);
-    winner.mmr_history.push_back(winner.mmr);
-    loser.opponent_history.push_back(winner.skill);
-    loser.mmr_history.push_back(loser.mmr);
+    winner.opponent_history->push_back(loser.skill);
+    winner.mmr_history->push_back(winner.mmr);
+    loser.opponent_history->push_back(winner.skill);
+    loser.mmr_history->push_back(loser.mmr);
 
     winner.mmr += offset;
     loser.mmr -= offset;
@@ -62,17 +63,17 @@ bool ELO_strategy::good_match(Player &p1, Player &p2)
 // Updates MMR for
 double ELO_strategy::update_mmr(Player &winner, Player &loser, double actual_chances)
 {
-    winner.opponent_history.push_back(loser.skill);
-    winner.mmr_history.push_back(winner.mmr);
-    loser.opponent_history.push_back(winner.skill);
-    loser.mmr_history.push_back(loser.mmr);
+    winner.opponent_history->push_back(loser.skill);
+    winner.mmr_history->push_back(winner.mmr);
+    loser.opponent_history->push_back(winner.skill);
+    loser.mmr_history->push_back(loser.mmr);
 
     // Chances of winning for the winner and loser. /400 is changed to 173. to use exp instead of pow(10,)
     double Ew = 1 / (1 + exp((loser.mmr - winner.mmr) / 173.718));
     double El = 1 - Ew;
 
-    winner.predicted_chances.push_back(Ew);
-    loser.predicted_chances.push_back(El);
+    winner.predicted_chances->push_back(Ew);
+    loser.predicted_chances->push_back(El);
 
     winner.mmr += K * El;
     loser.mmr -= K * El;
@@ -105,24 +106,24 @@ bool Tweaked_ELO_strategy::good_match(Player &p1, Player &p2)
 // Returns a learning coefficient for the player
 double Tweaked_ELO_strategy::get_learning_coefficient(Player &player, Player &other_player)
 {
-    double games = static_cast<double>(player.opponent_history.size()) - 1.0;
+    double games = static_cast<double>(player.opponent_history->size()) - 1.0;
     return exp(-games / game_div);
 }
 
 // Updates MMR for
 double Tweaked_ELO_strategy::update_mmr(Player &winner, Player &loser, double actual_chances)
 {
-    winner.opponent_history.push_back(loser.skill);
-    winner.mmr_history.push_back(winner.mmr);
-    loser.opponent_history.push_back(winner.skill);
-    loser.mmr_history.push_back(loser.mmr);
+    winner.opponent_history->push_back(loser.skill);
+    winner.mmr_history->push_back(winner.mmr);
+    loser.opponent_history->push_back(winner.skill);
+    loser.mmr_history->push_back(loser.mmr);
 
     // Chances of winning for the winner and loser. /400 is changed to 173. to use exp instead of pow(10,)
     double Ew = 1 / (1 + exp((loser.mmr - winner.mmr) / 173.718));
     double El = 1 - Ew;
 
-    winner.predicted_chances.push_back(Ew);
-    loser.predicted_chances.push_back(El);
+    winner.predicted_chances->push_back(Ew);
+    loser.predicted_chances->push_back(El);
 
     // Simply update coeficient based on number of games
     // Fewer games → faster update
@@ -158,7 +159,7 @@ double Tweaked2_ELO_strategy::get_learning_coefficient(Player &player, Player &o
     // The idea here learning lowers as the player gets more games
     // And playing a new opponent will give you lower learning coefficient (wont lose too many points to him)
     // But a new player playing an old player gets high learning coefficient (still can gain a lot of points by playing someone solid)
-    int player_games = static_cast<int>(player.opponent_history.size()) - 1;
-    int other_player_games = static_cast<int>(other_player.opponent_history.size()) - 1;
+    int player_games = static_cast<int>(player.opponent_history->size()) - 1;
+    int other_player_games = static_cast<int>(other_player.opponent_history->size()) - 1;
     return std::min(exp((-coef * other_player_games - player_games) / game_div), 1.0);
 }
