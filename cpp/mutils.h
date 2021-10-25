@@ -8,14 +8,15 @@
 #include <chrono>
 #include <map>
 #include <unordered_map>
+#include <array>
 
 // Functions for creating a string from multiple variables and priting multiple variables
 // Doesn't work on arrays correctly (as they decay to pointers when passed to a function).
-// Templated functions need to have implementation passed in a header file as they are
-// created and compiled as needed by each CPP file. They do not conflict even with the same arguments.
+
+// CREATING STRINGS
 
 template <typename A>
-std::string str(A a)
+std::string str(const A &a)
 {
     std::ostringstream ss;
     ss << a;
@@ -28,9 +29,24 @@ inline std::string str(const std::string &s)
 }
 
 template <typename T>
-std::string str(const std::vector<T> &a)
+std::string str(const std::vector<T> &v)
 {
-    if (a.size() == 0)
+    if (v.size() == 0)
+        return "[]";
+
+    std::string s = "[";
+    for (const T &el : v)
+        s += str(el) + ", ";
+
+    s.erase(s.end() - 2, s.end());
+    s += "]";
+    return s;
+}
+
+template <typename T, std::size_t N>
+std::string str(const std::array<T, N> &a)
+{
+    if (N == 0)
         return "[]";
 
     std::string s = "[";
@@ -43,7 +59,7 @@ std::string str(const std::vector<T> &a)
 }
 
 template <typename A, typename B>
-std::string str(std::unordered_map<A, B> &umap)
+std::string str(const std::unordered_map<A, B> &umap)
 {
     std::string s = "{";
     for (auto &el : umap)
@@ -55,7 +71,7 @@ std::string str(std::unordered_map<A, B> &umap)
 }
 
 template <typename A, typename B>
-std::string str(std::map<A, B> &map)
+std::string str(const std::map<A, B> &map)
 {
     std::string s = "{";
     for (auto &el : map)
@@ -66,81 +82,50 @@ std::string str(std::map<A, B> &map)
     return s;
 }
 
-template <typename A, typename B, typename C, typename D, typename E, typename F, typename G>
-std::string str(A a, B b, C c, D d, E e, F f, G g)
+inline std::string str()
 {
-    return str(a) + str(b) + str(c) + str(d) + str(e) + str(f) + str(g);
+    return "";
 }
 
-template <typename A, typename B, typename C, typename D, typename E, typename F>
-std::string str(A a, B b, C c, D d, E e, F f)
+template <typename T, typename... Types>
+std::string str(const T var1, const Types... var2)
 {
-    return str(a) + str(b) + str(c) + str(d) + str(e) + str(f);
+    std::string result;
+    result += str(var1);
+    result += str(var2...);
+    return result;
 }
 
-template <typename A, typename B, typename C, typename D, typename E>
-std::string str(A a, B b, C c, D d, E e)
-{
-    return str(a) + str(b) + str(c) + str(d) + str(e);
-}
+// PRINTING
 
-template <typename A, typename B, typename C, typename D>
-std::string str(A a, B b, C c, D d)
+template <typename A>
+void _print(const A a)
 {
-    return str(a) + str(b) + str(c) + str(d);
-}
-
-template <typename A, typename B, typename C>
-std::string str(A a, B b, C c)
-{
-    return str(a) + str(b) + str(c);
-}
-
-template <typename A, typename B>
-std::string str(A a, B b)
-{
-    return str(a) + str(b);
-}
-
-template <typename A, typename B, typename C, typename D, typename E, typename F>
-void print(A a, B b, C c, D d, E e, F f)
-{
-    std::cout << str(a) << " " << str(b) << " " << str(c) << " " << str(d) << " "
-              << str(e) << " " << str(f) << std::endl;
-}
-
-template <typename A, typename B, typename C, typename D, typename E>
-void print(A a, B b, C c, D d, E e)
-{
-    std::cout << str(a) << " " << str(b) << " " << str(c) << " " << str(d) << " "
-              << str(e) << std::endl;
-}
-
-template <typename A, typename B, typename C, typename D>
-void print(A a, B b, C c, D d)
-{
-    std::cout << str(a) << " " << str(b) << " " << str(c) << " " << str(d)
-              << std::endl;
-}
-
-template <typename A, typename B, typename C>
-void print(A a, B b, C c)
-{
-    std::cout << str(a) << " " << str(b) << " " << str(c)
-              << std::endl;
-}
-
-template <typename A, typename B>
-void print(A a, B b)
-{
-    std::cout << str(a) << " " << str(b)
-              << std::endl;
+    std::cout << a << ' ';
 }
 
 template <typename A>
-void print(A a)
+void _print(const std::vector<A> &v)
 {
-    std::cout << str(a) << std::endl;
+    std::cout << str(v) << ' ';
+}
+
+template <typename A, typename B>
+void _print(const std::map<A, B> &map)
+{
+    std::cout << str(map) << ' ';
+}
+
+template <typename A, typename B>
+void _print(const std::unordered_map<A, B> &map)
+{
+    std::cout << str(map) << ' ';
+}
+
+template <typename A, std::size_t N>
+void _print(const std::array<A, N> &a)
+{
+    std::cout << str(a) << ' ';
 }
 
 inline void print()
@@ -148,9 +133,17 @@ inline void print()
     std::cout << std::endl;
 }
 
-// Logs something to the file
+template <typename T, typename... Types>
+void print(const T var1, const Types... var2)
+{
+    _print(var1);
+    print(var2...);
+}
+
+// LOGGING
+
 template <typename A>
-void log(A a, std::string filename = "log.txt")
+void log(const A a, std::string filename = "log.txt")
 {
     std::string s = str(a);
     std::cout << s << std::endl;
@@ -164,17 +157,31 @@ void log(A a, std::string filename = "log.txt")
         std::cout << "Can't save to the file. Won't open.\n";
 }
 
-// A helpful class for easy measuring of time some part of the code takes
+// TIMER
+
 class Timeit
 {
     std::chrono::high_resolution_clock::time_point start;
+    bool scoped = false;
 
 public:
-    // Class methods defined in header files are inlined by default
-    Timeit()
+    Timeit(bool scoped = false)
+    {
+        start = std::chrono::high_resolution_clock::now();
+        this->scoped = scoped;
+    }
+
+    ~Timeit()
+    {
+        if (scoped)
+            print();
+    }
+
+    void reset()
     {
         start = std::chrono::high_resolution_clock::now();
     }
+
     void print()
     {
         std::chrono::duration<double, std::milli> ms_double = std::chrono::high_resolution_clock::now() - start;

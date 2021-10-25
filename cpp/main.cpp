@@ -9,7 +9,7 @@
 #include <memory>
 
 // Creates simulation, runs it, and returns a reference to it
-std::unique_ptr<Simulation> run_sim(int players, int iterations, int sp1, int sp2, int sp3, double sp4, const std::string &strategy_type, bool gradual)
+Simulation run_sim(int players, int iterations, int sp1, int sp2, int sp3, double sp4, const std::string &strategy_type, bool gradual)
 {
     Timeit t;
     std::unique_ptr<MatchmakingStrategy> strategy;
@@ -24,24 +24,27 @@ std::unique_ptr<Simulation> run_sim(int players, int iterations, int sp1, int sp
     else
         print("ERROR: Invalid strategy type!!!");
 
-    std::unique_ptr<Simulation> sim = std::make_unique<Simulation>(std::move(strategy));
+    Simulation sim = Simulation(std::move(strategy));
     if (gradual)
     {
         std::cout << "Add players gradually" << std::endl;
-        sim->add_players(players * 0.5);
-        sim->play_games(iterations * 0.4);
-        sim->add_players(players * 0.3);
-        sim->play_games(iterations * 0.4);
-        sim->add_players(players * 0.2);
-        sim->play_games(iterations * 0.2);
+        sim.add_players(players * 0.5);
+        sim.play_games(iterations * 0.4);
+        sim.add_players(players * 0.3);
+        sim.play_games(iterations * 0.4);
+        sim.add_players(players * 0.2);
+        sim.play_games(iterations * 0.2);
     }
     else
     {
         std::cout << "Add all players at once" << std::endl;
-        sim->add_players(players);
-        sim->play_games(iterations);
+        sim.add_players(players);
+        sim.play_games(iterations);
     }
 
     print("Simulation finished in", t.s(), "seconds");
+
+    // I can just return the class. The compiler will do return-value-optimization
+    // and correctly move this object into a new variable without copying.
     return sim;
 }

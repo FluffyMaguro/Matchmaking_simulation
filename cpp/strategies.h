@@ -46,12 +46,11 @@ public:
 //
 class Tweaked_ELO_strategy : public MatchmakingStrategy
 {
-protected:
+public:
     double K = 2;
     double KK = 145;
     int game_div = 35;
 
-public:
     Tweaked_ELO_strategy(){};
     Tweaked_ELO_strategy(double pK, double pKK, int pgame_div);
     bool good_match(Player &p1, Player &p2);
@@ -66,13 +65,13 @@ public:
 // Similar to normal ELO strategy but different uncertainity calculation
 class Tweaked2_ELO_strategy : public Tweaked_ELO_strategy
 {
-protected:
+
+public:
     double K = 2;
     double KK = 100;
     int game_div = 56;
     double coef = 0.3;
 
-public:
     Tweaked2_ELO_strategy(double pK, double pKK, int pgame_div, double pcoef);
     double get_learning_coefficient(Player &player, Player &other_player) override;
 };

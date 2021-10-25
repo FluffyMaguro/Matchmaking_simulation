@@ -8,23 +8,22 @@
 
 Simulation::Simulation(std::unique_ptr<MatchmakingStrategy> strat)
 {
-    prediction_difference = new std::vector<double>;
-    match_accuracy = new std::vector<double>;
-
-    m_strategy = std::move(strat); // Move pointer from argument unique smart pointer to strategy
+    // Initialize ENG
     int seed = static_cast<int>(std::chrono::steady_clock::now().time_since_epoch().count());
     m_RNG.seed(seed);
-    std::normal_distribution<> new_skill_distribution(2820 / 2.2, 800 / 2.2); // mean, std
-    m_skill_distribution = new_skill_distribution;
+
+    // Move pointer from argument unique smart pointer to strategy
+    m_strategy = std::move(strat);
+    // Create those vectors on the heap
+    prediction_difference.reset(new std::vector<double>);
+    match_accuracy.reset(new std::vector<double>);
 }
 
 // Adds `number` of players to the simulation
 void Simulation::add_players(int number)
 {
     for (int i = 0; i < number; i++)
-    {
-        players.push_back(std::make_unique<Player>(m_skill_distribution(m_RNG)));
-    }
+        players.push_back(Player(m_skill_distribution(m_RNG)));
 }
 void Simulation::add_players(double number)
 {
@@ -86,9 +85,9 @@ void Simulation::play_games(int number)
             opponent = m_RNG() % players_num;
             if (opponent == player) // we don't want the same player
                 continue;
-            if (m_strategy->good_match(*(players[player]), *(players[opponent])))
+            if (m_strategy->good_match(players[player], players[opponent]))
             {
-                resolve_game(*(players[player]), *(players[opponent]));
+                resolve_game(players[player], players[opponent]);
                 games_played++;
                 break;
             }

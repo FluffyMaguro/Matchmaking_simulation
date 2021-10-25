@@ -15,7 +15,7 @@ start = time.time()
 
 ### RUN SIMULATION
 PLAYERS = 20000
-GAMES = 20000000
+GAMES = 100000000
 data, prediction_differences, match_accuracy = psimulation.run_simulation(
     PLAYERS, GAMES, "tweaked2_elo")
 
@@ -24,6 +24,10 @@ process = psutil.Process(os.getpid())
 print(f"Peak memory usage: {process.memory_info().peak_wset/(1024*1024):.0f} MB")
 
 """
+PLAYERS = 20000
+GAMES = 100000000
+-----------------
+
 BASE
 14273 MB    81.82s
 14275 MB    82.23s

@@ -10,31 +10,24 @@ static char module_docstring[] =
     "Module simulating various strategies for matchmaking";
 
 // Helper function that creates a dictionary of all player data
-PyObject *get_player_data(const std::unique_ptr<Player> &p)
+PyObject *get_player_data(Player &p)
 {
-    // All arrays of the same size
-    size_t size = (*p).opponent_history->size();
-
-    // Get memory location from std::vectors
-    double *c_opponent_history = &(*((*p).opponent_history))[0];
-    double *c_mmr_history = &(*((*p).mmr_history))[0];
-    double *c_predicted_chances = &(*((*p).predicted_chances))[0];
-
-    // p will forget about its data and won't delete it when destroyed
-    (*p).lose_ownership();
-
     // Create numpy objects
-    npy_intp m = size;
-    PyObject *opponent_history = PyArray_SimpleNewFromData(1, &m, NPY_DOUBLE, c_opponent_history);
-    PyObject *mmr_history = PyArray_SimpleNewFromData(1, &m, NPY_DOUBLE, c_mmr_history);
-    PyObject *predicted_chances = PyArray_SimpleNewFromData(1, &m, NPY_DOUBLE, c_predicted_chances);
+    npy_intp m = p.opponent_history->size();
+    PyObject *opponent_history = PyArray_SimpleNewFromData(1, &m, NPY_DOUBLE, &((*p.opponent_history)[0]));
+    PyObject *mmr_history = PyArray_SimpleNewFromData(1, &m, NPY_DOUBLE, &((*p.mmr_history)[0]));
+    PyObject *predicted_chances = PyArray_SimpleNewFromData(1, &m, NPY_DOUBLE, &((*p.predicted_chances)[0]));
+    // release unique_ptrs so they won't delete data
+    p.opponent_history.release();
+    p.mmr_history.release();
+    p.predicted_chances.release();
 
     // Build a final player object
-    return Py_BuildValue("{sdsdsOsOsO}", "skill", (*p).skill, "mmr", (*p).mmr, "opponent_history", opponent_history, "mmr_history", mmr_history, "predicted_chances", predicted_chances);
+    return Py_BuildValue("{sdsdsOsOsO}", "skill", p.skill, "mmr", p.mmr, "opponent_history", opponent_history, "mmr_history", mmr_history, "predicted_chances", predicted_chances);
 }
 
 // Initialize and run simulation based on given arguments
-std::unique_ptr<Simulation> initialize_simulation(PyObject *args)
+Simulation initialize_simulation(PyObject *args)
 {
     // simulation parameters and three strategy parameters
     int iterations, players;
@@ -71,17 +64,20 @@ PyObject *get_np_array_from_pointer(std::vector<double> *vect)
 // Runs simulation and returns its data
 static PyObject *run_simulation(PyObject *self, PyObject *args)
 {
-    std::unique_ptr<Simulation> sim = initialize_simulation(args);
+    Simulation sim = initialize_simulation(args);
     Timeit t;
-
     // Get data for players
     PyObject *Result_Players = PyList_New(0);
-    for (const std::unique_ptr<Player> &p : sim->players)
+    for (Player &p : sim.players)
         PyList_Append(Result_Players, Py_BuildValue("O", get_player_data(p)));
 
-    PyObject *Result_Predictions = get_np_array_from_pointer(sim->prediction_difference);
-    PyObject *Result_MatchAccuracy = get_np_array_from_pointer(sim->match_accuracy);
-    sim->lose_ownership();
+    // Here we first create numpy arrays based on the pointer of arrays
+    // And then release the pointer so the data isn't destroyed when this function ends
+    // Data is instead managed by the numpy array
+    PyObject *Result_Predictions = get_np_array_from_pointer(sim.prediction_difference.get());
+    PyObject *Result_MatchAccuracy = get_np_array_from_pointer(sim.match_accuracy.get());
+    sim.prediction_difference.release();
+    sim.match_accuracy.release();
 
     PyObject *Result = PyList_New(0);
     PyList_Append(Result, Result_Players);
@@ -97,16 +93,16 @@ static PyObject *run_simulation(PyObject *self, PyObject *args)
 // Runs parameter optimization and returns its data
 static PyObject *run_parameter_optimization(PyObject *self, PyObject *args)
 {
-    std::unique_ptr<Simulation> sim = initialize_simulation(args);
+    Simulation sim = initialize_simulation(args);
     // Get prediction sums
     const int LATE_GAMES = 1000;
     double match_sum = 0;
     double match_sum_late = 0;
-    for (int i = 0; i < sim->prediction_difference->size(); i++)
+    for (int i = 0; i < sim.prediction_difference->size(); i++)
     {
-        match_sum += (*(sim->prediction_difference))[i];
-        if (i + LATE_GAMES >= sim->prediction_difference->size())
-            match_sum_late += (*(sim->prediction_difference))[i];
+        match_sum += (*(sim.prediction_difference))[i];
+        if (i + LATE_GAMES >= sim.prediction_difference->size())
+            match_sum_late += (*(sim.prediction_difference))[i];
     }
 
     PyObject *Result = PyList_New(0);
@@ -121,14 +117,14 @@ std::vector<double> parameter_optimization_worker(int players, int iterations, i
     double match_sum_late = 0;
 
     // Run simulation
-    std::unique_ptr<Simulation> sim = std::move(run_sim(players, iterations, sp1, sp2, sp3, sp4, strategy_type));
+    Simulation sim = run_sim(players, iterations, sp1, sp2, sp3, sp4, strategy_type);
 
     // Get prediction sums
-    for (int i = 0; i < sim->prediction_difference->size(); i++)
+    for (int i = 0; i < sim.prediction_difference->size(); i++)
     {
-        match_sum += (*(sim->prediction_difference))[i];
-        if (i + LATE_GAMES >= sim->prediction_difference->size())
-            match_sum_late += (*(sim->prediction_difference))[i];
+        match_sum += (*(sim.prediction_difference))[i];
+        if (i + LATE_GAMES >= sim.prediction_difference->size())
+            match_sum_late += (*(sim.prediction_difference))[i];
     }
     std::vector<double> out = {match_sum, match_sum_late};
     return out;

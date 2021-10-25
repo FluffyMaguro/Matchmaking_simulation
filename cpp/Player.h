@@ -3,7 +3,7 @@
 #include "mutils.h"
 
 #include <vector>
-#include <string>
+#include <memory>
 
 //
 // PLAYER CLASS
@@ -19,31 +19,18 @@ public:
     // MMR assigned by the matchmaker
     double mmr = 2820 / 2.2;
     // Vector of opponent skills.
-    std::vector<double> *opponent_history;
+    std::unique_ptr<std::vector<double>> opponent_history;
     // MMR history
-    std::vector<double> *mmr_history;
+    std::unique_ptr<std::vector<double>> mmr_history;
     // Chances predicted by the matchmaker
-    std::vector<double> *predicted_chances;
+    std::unique_ptr<std::vector<double>> predicted_chances;
+    
     // Define player and assign him his skill value
     Player(double pskill)
     {
         skill = pskill;
-        opponent_history = new std::vector<double>;
-        mmr_history = new std::vector<double>;
-        predicted_chances = new std::vector<double>;
-    };
-
-    ~Player()
-    {
-        delete opponent_history;
-        delete mmr_history;
-        delete predicted_chances;
-    }
-
-    void lose_ownership()
-    {
-        opponent_history = nullptr;
-        mmr_history = nullptr;
-        predicted_chances = nullptr;
+        opponent_history.reset(new std::vector<double>);
+        mmr_history.reset(new std::vector<double>);
+        predicted_chances.reset(new std::vector<double>);
     }
 };
