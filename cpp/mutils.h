@@ -88,18 +88,15 @@ inline std::string str()
 }
 
 template <typename T, typename... Types>
-std::string str(const T var1, const Types... var2)
+std::string str(const T &var1, const Types &...var2)
 {
-    std::string result;
-    result += str(var1);
-    result += str(var2...);
-    return result;
+    return str(var1) + str(var2...);
 }
 
 // PRINTING
 
 template <typename A>
-void _print(const A a)
+void _print(const A &a)
 {
     std::cout << a << ' ';
 }
@@ -134,7 +131,7 @@ inline void print()
 }
 
 template <typename T, typename... Types>
-void print(const T var1, const Types... var2)
+void print(const T &var1, const Types &...var2)
 {
     _print(var1);
     print(var2...);
@@ -143,7 +140,7 @@ void print(const T var1, const Types... var2)
 // LOGGING
 
 template <typename A>
-void log(const A a, std::string filename = "log.txt")
+void log(const A &a, const std::string filename = "log.txt")
 {
     std::string s = str(a);
     std::cout << s << std::endl;
@@ -162,9 +159,10 @@ void log(const A a, std::string filename = "log.txt")
 class Timeit
 {
     std::chrono::high_resolution_clock::time_point start;
-    bool scoped = false;
 
 public:
+    bool scoped = false;
+
     Timeit(bool scoped = false)
     {
         start = std::chrono::high_resolution_clock::now();
