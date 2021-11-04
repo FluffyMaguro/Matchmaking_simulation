@@ -16,15 +16,17 @@ start = time.time()
 
 ### RUN SIMULATION
 PLAYERS = 20000
-GAMES = 100000
+GAMES = 1000000
+STRATEGY = "trueskill"
 psimulation.set_my_python_function(trueskill_rate.rate_1v1)
 data, prediction_differences, match_accuracy = psimulation.run_simulation(
-    PLAYERS, GAMES, "trueskill")
+    PLAYERS, GAMES, STRATEGY)
 
-print(prediction_differences[:10])
 process = psutil.Process(os.getpid())
-print(f"Peak memory usage: {process.memory_info().peak_wset/(1024*1024):.0f} MB")
+print(
+    f"Peak memory usage: {process.memory_info().peak_wset/(1024*1024):.0f} MB")
 
+    
 """
 PLAYERS = 20000
 GAMES = 100000000
@@ -43,7 +45,6 @@ COPY
 7966 MB     89.1423s    when Players vectors directly to carray as well
 
 """
-
 
 ### PLOTTING
 start_plotting = time.time()
@@ -240,14 +241,25 @@ mmrs = np.array([i["mmr"] for i in data])
 def plot_other():
     ## MMR - SKILL
     plt.figure().clear()
-    plt.plot(skills, mmrs)
-    plt.plot([np.min(skills), np.max(skills)],
+    fig, ax = plt.subplots()
+    ax.plot(skills, mmrs)
+
+    if STRATEGY == 'trueskill':
+        ax2 = ax.twinx()
+        ax.set_ylabel("Player MMR", color="#1F4B73")
+        ax2.set_ylabel("Player Skill")
+    else:
+        ax2 = ax
+        ax.set_ylabel("Player MMR")
+
+    ax2.plot([np.min(skills), np.max(skills)],
              [np.min(skills), np.max(skills)],
              color="black",
              linewidth=0.5)
+
     plt.title(f"MMR - Skill relation ({GAMES/PLAYERS:.0f} games/player)")
     plt.xlabel("Player skill")
-    plt.ylabel("Player MMR")
+
     plt.grid(alpha=0.2)
     plt.tight_layout()
     plt.savefig("img/MMR-Skill.png")

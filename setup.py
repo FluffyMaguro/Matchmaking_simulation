@@ -9,7 +9,7 @@ setup(
             "psimulation",
             [
                 "cpp/sim.cpp", "cpp/strategies.cpp", "cpp/simulation.cpp",
-                "cpp/main.cpp"
+                "cpp/main.cpp", "cpp/trueskill.cpp"
             ],
             include_dirs=[numpy.get_include()],
         )

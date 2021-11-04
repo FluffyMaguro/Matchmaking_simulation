@@ -1,5 +1,8 @@
 #pragma once
 
+#include "Python.h"
+
+// Data structure used for storing player data in one match
 struct match_pair
 {
     double winner_mu;
@@ -9,5 +12,5 @@ struct match_pair
     int draw = 0; // 0 for non-draw; 1 for draw
 };
 
-// from sim.cpp
+PyObject *set_trueskill_rate_1v1(PyObject *dummy, PyObject *args);
 match_pair trueskill_update(match_pair pair);

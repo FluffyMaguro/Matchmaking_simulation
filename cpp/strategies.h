@@ -2,6 +2,7 @@
 
 #include "player.h"
 #include "trueskill.h"
+#include <cmath>
 
 //
 // ABSTRACT CLASS FOR MATCHMAKING STRATEGY
@@ -82,6 +83,10 @@ public:
 //
 class Trueskill_strategy : public MatchmakingStrategy
 {
+    const double MU = 25.;          //   25
+    const double SIGMA = 25 / 3;    //  ~ 8.333
+    const double BETA = SIGMA / 2;  //  ~ 4.166    # Variance of performance
+    const double TAU = SIGMA / 100; //  ~ 0.083    # Dynamic variance
 
 public:
     Trueskill_strategy()
@@ -91,9 +96,32 @@ public:
 
     bool good_match(Player &p1, Player &p2)
     {
-        // TEMPORARY, WILL CALCULATE IT HERE DIRECTLY
-        return true;
+        /* Calculates relative probability of draw between to players relative to probability of a draw between
+        two equally skilled players (when draw_margin approaching 0). So it's always between 0 and 1.
+        This is what trueskill match quality returns. For the best match this would be maximized.
+        That equals the highest chance for a draw regardless of actual draw chance in given game. */
+
+        double sigma2 = 2 * pow(BETA, 2) + pow(p1.sigma, 2) + pow(p2.sigma, 2);
+        double sqrt_part = sqrt((2 * pow(BETA, 2)) / sigma2);
+        double exp_part = exp(-1 * pow(p1.mmr - p2.mmr, 2) / (2 * sigma2));
+        return sqrt_part * exp_part > 0.4;
     }
+
+    // Calculates normal distribution at point
+    double normalCDF(double value, double mu, double sigma)
+    {
+        const double sqrt2 = sqrt(2);
+        return 0.5 + 0.5 * erf((value - mu) / (sigma * sqrt2));
+    }
+
+    // Calculates the winning chance of player p1
+    double winning_chance(Player &p1, Player &p2, double draw_margin = 0)
+    {
+        double mu = p1.mmr - p2.mmr;
+        double sigma = sqrt(pow(p1.sigma, 2) + pow(p2.sigma, 2) + 2 * pow(BETA, 2));
+        return 1.0 - normalCDF(draw_margin, mu, sigma);
+    }
+
     double update_mmr(Player &winner, Player &loser, double actual_chances)
     {
         winner.opponent_history->push_back(loser.skill);
@@ -110,8 +138,11 @@ public:
         loser.mmr = new_pair.loser_mu;
         loser.sigma = new_pair.loser_sigma;
 
+        double p1_winning_chance = winning_chance(winner, loser);
+        winner.predicted_chances->push_back(p1_winning_chance);
+        loser.predicted_chances->push_back(1 - p1_winning_chance);
+
         // Return the difference between actual and predicted chances
-        // TEMPORARY
-        return std::abs(actual_chances - 0.5);
+        return std::abs(actual_chances - p1_winning_chance);
     }
 };

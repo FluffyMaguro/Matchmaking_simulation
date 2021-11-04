@@ -6,12 +6,14 @@ import numpy as np
 import seaborn as sns
 
 import psimulation
+import trueskill_rate
 
 ### RUN SIMULATION
 PLAYERS = 20000
 GAMES = 1000000
 
-strategy_types = ["naive", "elo", "tweaked_elo", "tweaked2_elo"]
+strategy_types = ["naive", "elo", "tweaked_elo", "tweaked2_elo", "trueskill"]
+psimulation.set_my_python_function(trueskill_rate.rate_1v1)
 fig, ax = plt.subplots(4, 1, dpi=120, figsize=(7, 18))
 BINS = 200
 legend = [[], []]
