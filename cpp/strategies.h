@@ -1,6 +1,7 @@
 #pragma once
 
 #include "player.h"
+#include "trueskill.h"
 
 //
 // ABSTRACT CLASS FOR MATCHMAKING STRATEGY
@@ -74,4 +75,43 @@ public:
 
     Tweaked2_ELO_strategy(double pK, double pKK, int pgame_div, double pcoef);
     double get_learning_coefficient(Player &player, Player &other_player) override;
+};
+
+//
+// TRUESKILL STRATEGY
+//
+class Trueskill_strategy : public MatchmakingStrategy
+{
+
+public:
+    Trueskill_strategy()
+    {
+        std::cout << "TRUESKILL strategy\n";
+    }
+
+    bool good_match(Player &p1, Player &p2)
+    {
+        // TEMPORARY, WILL CALCULATE IT HERE DIRECTLY
+        return true;
+    }
+    double update_mmr(Player &winner, Player &loser, double actual_chances)
+    {
+        winner.opponent_history->push_back(loser.skill);
+        winner.mmr_history->push_back(winner.mmr);
+        loser.opponent_history->push_back(winner.skill);
+        loser.mmr_history->push_back(loser.mmr);
+
+        // Update player skill and sigma
+        match_pair old_pair{winner.mmr, winner.sigma, loser.mmr, loser.sigma};
+        match_pair new_pair = trueskill_update(old_pair);
+
+        winner.mmr = new_pair.winner_mu;
+        winner.sigma = new_pair.winner_sigma;
+        loser.mmr = new_pair.loser_mu;
+        loser.sigma = new_pair.loser_sigma;
+
+        // Return the difference between actual and predicted chances
+        // TEMPORARY
+        return std::abs(actual_chances - 0.5);
+    }
 };

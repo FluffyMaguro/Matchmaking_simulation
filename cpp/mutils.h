@@ -142,7 +142,7 @@ void print(const T &var1, const Types &...var2)
 template <typename A>
 void log(const A &a, const std::string filename = "log.txt")
 {
-    std::string s = str(a);
+    const std::string s = str(a);
     std::cout << s << std::endl;
     std::ofstream myfile(filename, std::ios::out | std::ios::app);
     if (myfile.is_open())

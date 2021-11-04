@@ -18,13 +18,15 @@ public:
     double skill;
     // MMR assigned by the matchmaker
     double mmr = 2820 / 2.2;
+    // Uncertainity
+    double sigma;
     // Vector of opponent skills.
     std::unique_ptr<std::vector<double>> opponent_history;
     // MMR history
     std::unique_ptr<std::vector<double>> mmr_history;
     // Chances predicted by the matchmaker
     std::unique_ptr<std::vector<double>> predicted_chances;
-    
+
     // Define player and assign him his skill value
     Player(double pskill)
     {

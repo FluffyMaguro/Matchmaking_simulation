@@ -21,10 +21,20 @@ Simulation run_sim(int players, int iterations, int sp1, int sp2, int sp3, doubl
         strategy = std::make_unique<ELO_strategy>(sp1);
     else if (strategy_type == "naive")
         strategy = std::make_unique<Naive_strategy>(sp1, sp2);
+    else if (strategy_type == "trueskill")
+        strategy = std::make_unique<Trueskill_strategy>();
     else
         print("ERROR: Invalid strategy type!!!");
 
     Simulation sim = Simulation(std::move(strategy));
+
+    // For Trueskill we will want different default player parameters
+    if (strategy_type == "trueskill")
+    {
+        sim.m_force_player_mmr = 25.0;
+        sim.m_force_player_sigma = 25 / 3;
+    }
+
     if (gradual)
     {
         std::cout << "Add players gradually" << std::endl;

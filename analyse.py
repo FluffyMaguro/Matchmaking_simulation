@@ -1,23 +1,25 @@
 import math
+import os
 import statistics
 import time
-from functools import partial, lru_cache
+from functools import lru_cache, partial
 
 import matplotlib.pyplot as plt
 import numpy as np
-import seaborn as sns
 import psutil
-import os
+import seaborn as sns
 
 import psimulation
+import trueskill_rate
 
 start = time.time()
 
 ### RUN SIMULATION
 PLAYERS = 20000
-GAMES = 100000000
+GAMES = 100000
+psimulation.set_my_python_function(trueskill_rate.rate_1v1)
 data, prediction_differences, match_accuracy = psimulation.run_simulation(
-    PLAYERS, GAMES, "tweaked2_elo")
+    PLAYERS, GAMES, "trueskill")
 
 print(prediction_differences[:10])
 process = psutil.Process(os.getpid())
@@ -39,7 +41,6 @@ COPY
 11993 MB                with changing to pointers and carray from std::vector
 11987 MB                when simulation releasing its vector pointers
 7966 MB     89.1423s    when Players vectors directly to carray as well
-
 
 """
 

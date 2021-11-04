@@ -24,6 +24,15 @@ void Simulation::add_players(int number)
 {
     for (int i = 0; i < number; i++)
         players.push_back(Player(m_skill_distribution(m_RNG)));
+
+    // change player defaults if forced by the strategy
+    for (auto &player : players)
+    {
+        if (m_force_player_mmr > -1.0)
+            player.mmr = m_force_player_mmr;
+        if (m_force_player_sigma > -1.0)
+            player.sigma = m_force_player_sigma;
+    }
 }
 void Simulation::add_players(double number)
 {
