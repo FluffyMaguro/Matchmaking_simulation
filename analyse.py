@@ -16,7 +16,7 @@ start = time.time()
 
 ### RUN SIMULATION
 PLAYERS = 20000
-GAMES = 1000000
+GAMES = 20000000
 STRATEGY = "trueskill"
 psimulation.set_my_python_function(trueskill_rate.rate_1v1)
 data, prediction_differences, match_accuracy = psimulation.run_simulation(
@@ -26,7 +26,7 @@ process = psutil.Process(os.getpid())
 print(
     f"Peak memory usage: {process.memory_info().peak_wset/(1024*1024):.0f} MB")
 
-    
+
 """
 PLAYERS = 20000
 GAMES = 100000000

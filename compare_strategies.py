@@ -14,7 +14,7 @@ GAMES = 1000000
 
 strategy_types = ["naive", "elo", "tweaked_elo", "tweaked2_elo", "trueskill"]
 psimulation.set_my_python_function(trueskill_rate.rate_1v1)
-fig, ax = plt.subplots(4, 1, dpi=120, figsize=(7, 18))
+fig, ax = plt.subplots(3, 1, dpi=120, figsize=(7, 14))
 BINS = 200
 legend = [[], []]
 start = time.time()
@@ -39,7 +39,7 @@ for idx, strategy in enumerate(strategy_types):
     if skills is None:
         skills = np.array([i["skill"] for i in data])
     mmrs = np.array([i["mmr"] for i in data])
-    ax[3].plot(skills, mmrs)
+    ax[2].plot(skills, mmrs)
 
     # Other plots
     x = np.linspace(1, BINS, BINS)
@@ -55,33 +55,33 @@ for idx, strategy in enumerate(strategy_types):
     color = p[0].get_color()
     ax[0].plot(x * GAMES / BINS, prediction_differences, color=color)
 
-    sns.histplot(match_accuracy,
-                 element='poly',
-                 fill=True,
-                 alpha=0.2,
-                 ax=ax[2],
-                 color=color)
+    # sns.histplot(match_accuracy,
+    #              element='poly',
+    #              fill=True,
+    #              alpha=0.2,
+    #              ax=ax[3],
+    #              color=color)
 
-ax[3].set_ylim(np.min(skills) * 1.1 - 200, np.max(skills) * 1.1 + 200)
-ax[3].plot([np.min(skills), np.max(skills)],
+ax[2].set_ylim(np.min(skills) * 1.1 - 200, np.max(skills) * 1.1 + 200)
+ax[2].plot([np.min(skills), np.max(skills)],
            [np.min(skills), np.max(skills)],
            color="black",
            linewidth=0.5)
 
-ax[3].set_title(f"MMR - Skill relation ({GAMES/PLAYERS:.0f} games/player)")
-ax[3].set_xlabel("Player skill")
-ax[3].set_ylabel("Player MMR")
-ax[3].grid(alpha=0.2)
-ax[3].legend(strategy_types + ["optimum"], loc="best")
+ax[2].set_title(f"MMR - Skill relation ({GAMES/PLAYERS:.0f} games/player)")
+ax[2].set_xlabel("Player skill")
+ax[2].set_ylabel("Player MMR")
+ax[2].grid(alpha=0.2)
+ax[2].legend(strategy_types + ["optimum"], loc="best")
 
 ax[0].set_title(
     f"How a matchmaking strategy gets better at predicting outcomes")
 ax[0].set_ylabel("Error in predition")
 ax[1].set_title(f"Difference in skill between matched players")
 ax[1].set_ylabel("Difference in skill")
-ax[2].set_xlabel("Match accuracy error")
-ax[2].grid(alpha=0.2)
-ax[2].legend(strategy_types, loc="best")
+# ax[3].set_xlabel("Match accuracy error")
+# ax[3].grid(alpha=0.2)
+# ax[3].legend(strategy_types, loc="best")
 
 for i in range(2):
     ax[i].grid(alpha=0.2)
