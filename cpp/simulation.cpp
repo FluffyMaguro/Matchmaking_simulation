@@ -17,6 +17,7 @@ Simulation::Simulation(std::unique_ptr<MatchmakingStrategy> strat)
     // Create those vectors on the heap
     prediction_difference.reset(new std::vector<double>);
     match_accuracy.reset(new std::vector<double>);
+    good_match_fraction.reset(new std::vector<double>);
 }
 
 // Adds `number` of players to the simulation
@@ -87,6 +88,8 @@ void Simulation::play_games(int number)
     {
         // Pick a random player
         player = m_RNG() % players_num;
+        if (games_played % 1000 == 0)
+            calculate_good_match_fraction(players[player], players_num);
 
         // Pick a random opponent
         for (int tries = 0; tries < 10000; tries++)
@@ -107,4 +110,15 @@ void Simulation::play_games(int number)
 void Simulation::play_games(double number)
 {
     play_games(static_cast<int>(number));
+}
+
+void Simulation::calculate_good_match_fraction(Player &p, int players_num)
+{
+    int good_matches = 0;
+    for (Player &player_iter : players)
+    {
+        if (&player_iter != &p && m_strategy->good_match(p, player_iter))
+            good_matches++;
+    }
+    good_match_fraction->push_back((double)good_matches / players_num);
 }

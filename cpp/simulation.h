@@ -15,8 +15,12 @@ class Simulation
 
 public:
     std::vector<Player> players;
+    // The difference between actual winning chances and predicted winning chances
     std::unique_ptr<std::vector<double>> prediction_difference;
+    // How far the chosen player winning chance is from 50%
     std::unique_ptr<std::vector<double>> match_accuracy;
+    // The percent of players that are considered a good match for the first chosen player
+    std::unique_ptr<std::vector<double>> good_match_fraction;
     double m_force_player_mmr = -1.0;
     double m_force_player_sigma = -1.0;
 
@@ -28,4 +32,5 @@ public:
     void resolve_game(Player &p1, Player &p2);
     void play_games(int number);
     void play_games(double number);
+    void calculate_good_match_fraction(Player &p, int players_num);
 };

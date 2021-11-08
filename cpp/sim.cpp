@@ -18,13 +18,15 @@ PyObject *get_player_data(Player &p)
     PyObject *opponent_history = PyArray_SimpleNewFromData(1, &m, NPY_DOUBLE, &((*p.opponent_history)[0]));
     PyObject *mmr_history = PyArray_SimpleNewFromData(1, &m, NPY_DOUBLE, &((*p.mmr_history)[0]));
     PyObject *predicted_chances = PyArray_SimpleNewFromData(1, &m, NPY_DOUBLE, &((*p.predicted_chances)[0]));
+    PyObject *sigma_history = PyArray_SimpleNewFromData(1, &m, NPY_DOUBLE, &((*p.sigma_history)[0]));
     // release unique_ptrs so they won't delete data
     p.opponent_history.release();
     p.mmr_history.release();
     p.predicted_chances.release();
+    p.sigma_history.release();
 
     // Build a final player object
-    return Py_BuildValue("{sdsdsOsOsO}", "skill", p.skill, "mmr", p.mmr, "opponent_history", opponent_history, "mmr_history", mmr_history, "predicted_chances", predicted_chances);
+    return Py_BuildValue("{sdsdsdsOsOsOsO}", "skill", p.skill, "mmr", p.mmr, "sigma", p.sigma, "opponent_history", opponent_history, "mmr_history", mmr_history, "predicted_chances", predicted_chances, "sigma_history", sigma_history);
 }
 
 // Initialize and run simulation based on given arguments
@@ -77,13 +79,16 @@ static PyObject *run_simulation(PyObject *self, PyObject *args)
     // Data is instead managed by the numpy array
     PyObject *Result_Predictions = get_np_array_from_pointer(sim.prediction_difference.get());
     PyObject *Result_MatchAccuracy = get_np_array_from_pointer(sim.match_accuracy.get());
+    PyObject *Result_GoodMatchFraction = get_np_array_from_pointer(sim.good_match_fraction.get());
     sim.prediction_difference.release();
     sim.match_accuracy.release();
+    sim.good_match_fraction.release();
 
     PyObject *Result = PyList_New(0);
     PyList_Append(Result, Result_Players);
     PyList_Append(Result, Result_Predictions);
     PyList_Append(Result, Result_MatchAccuracy);
+    PyList_Append(Result, Result_GoodMatchFraction);
 
     print("Creating Python objects for players finished in", t.s(), "seconds");
     // delete sim; // This is not necessary because we are using unique_ptr class and

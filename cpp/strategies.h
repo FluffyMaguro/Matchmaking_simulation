@@ -94,17 +94,24 @@ public:
         std::cout << "TRUESKILL strategy\n";
     }
 
-    bool good_match(Player &p1, Player &p2)
+    double match_quality(Player &p1, Player &p2)
     {
         /* Calculates relative probability of draw between to players relative to probability of a draw between
         two equally skilled players (when draw_margin approaching 0). So it's always between 0 and 1.
         This is what trueskill match quality returns. For the best match this would be maximized.
-        That equals the highest chance for a draw regardless of actual draw chance in given game. */
+        That equals the highest chance for a draw regardless of actual draw chance in given game. 
 
+        Values between 0-1 and two players with default settings leads to 0.4472 quality */
         double sigma2 = 2 * pow(BETA, 2) + pow(p1.sigma, 2) + pow(p2.sigma, 2);
         double sqrt_part = sqrt((2 * pow(BETA, 2)) / sigma2);
         double exp_part = exp(-1 * pow(p1.mmr - p2.mmr, 2) / (2 * sigma2));
-        return sqrt_part * exp_part > 0.4;
+        return sqrt_part * exp_part;
+    }
+
+    bool good_match(Player &p1, Player &p2)
+    {
+        // 0.40 since default settings lead to 0.4472 quality
+        return match_quality(p1, p2) > 0.40;
     }
 
     // Calculates normal distribution at point
@@ -118,7 +125,7 @@ public:
     double winning_chance(Player &p1, Player &p2, double draw_margin = 0)
     {
         double mu = p1.mmr - p2.mmr;
-        double sigma = sqrt(pow(p1.sigma, 2) + pow(p2.sigma, 2) + 2 * pow(BETA, 2));
+        double sigma = sqrt(pow(p1.sigma, 2.0) + pow(p2.sigma, 2.0) + 2.0 * pow(BETA, 2.0));
         return 1.0 - normalCDF(draw_margin, mu, sigma);
     }
 
@@ -128,19 +135,23 @@ public:
         winner.mmr_history->push_back(winner.mmr);
         loser.opponent_history->push_back(winner.skill);
         loser.mmr_history->push_back(loser.mmr);
+        winner.sigma_history->push_back(winner.sigma);
+        loser.sigma_history->push_back(loser.sigma);
 
         // Update player skill and sigma
         match_pair old_pair{winner.mmr, winner.sigma, loser.mmr, loser.sigma};
         match_pair new_pair = trueskill_update(old_pair);
 
+        double p1_winning_chance = winning_chance(winner, loser);
+        winner.predicted_chances->push_back(p1_winning_chance);
+        loser.predicted_chances->push_back(1 - p1_winning_chance);
+        // if (p1_winning_chance > 0.9)
+        //     print("winning chance:", p1_winning_chance, "match quality:", match_quality(winner, loser), winner.mmr, winner.sigma, loser.mmr, loser.sigma);
+
         winner.mmr = new_pair.winner_mu;
         winner.sigma = new_pair.winner_sigma;
         loser.mmr = new_pair.loser_mu;
         loser.sigma = new_pair.loser_sigma;
-
-        double p1_winning_chance = winning_chance(winner, loser);
-        winner.predicted_chances->push_back(p1_winning_chance);
-        loser.predicted_chances->push_back(1 - p1_winning_chance);
 
         // Return the difference between actual and predicted chances
         return std::abs(actual_chances - p1_winning_chance);

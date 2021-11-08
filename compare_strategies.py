@@ -7,14 +7,16 @@ import seaborn as sns
 
 import psimulation
 import trueskill_rate
+from analyse import plot_data
+from trueskill_rate import Stats
 
 ### RUN SIMULATION
 PLAYERS = 20000
-GAMES = 1000000
+GAMES = 5000000
 
 strategy_types = ["naive", "elo", "tweaked_elo", "tweaked2_elo", "trueskill"]
 psimulation.set_my_python_function(trueskill_rate.rate_1v1)
-fig, ax = plt.subplots(3, 1, dpi=120, figsize=(7, 14))
+fig, ax = plt.subplots(4, 1, dpi=120, figsize=(7, 14))
 BINS = 200
 legend = [[], []]
 start = time.time()
@@ -30,9 +32,17 @@ def smooth(array: np.ndarray, bins: int) -> np.ndarray:
 
 
 skills = None
+ts_data = dict()
+
 for idx, strategy in enumerate(strategy_types):
-    data, prediction_differences, match_accuracy = psimulation.run_simulation(
+    data, prediction_differences, match_accuracy, good_match_fraction = psimulation.run_simulation(
         PLAYERS, GAMES, strategy)
+
+    # SIGMA
+    if strategy == 'trueskill':
+        ts_data['data'] = data
+        ts_data['prediction_differences'] = prediction_differences
+        ts_data['match_accuracy'] = match_accuracy
 
     # MMR - SKILL
     data = np.array([i for i in sorted(data, key=lambda x: x["skill"])])
@@ -55,12 +65,15 @@ for idx, strategy in enumerate(strategy_types):
     color = p[0].get_color()
     ax[0].plot(x * GAMES / BINS, prediction_differences, color=color)
 
-    # sns.histplot(match_accuracy,
-    #              element='poly',
-    #              fill=True,
-    #              alpha=0.2,
-    #              ax=ax[3],
-    #              color=color)
+    # Good match fraction
+    good_match_fraction = smooth(good_match_fraction, 100)
+    ax[3].plot(np.arange(100), good_match_fraction, label=strategy, alpha=0.5)
+
+ax[3].set_title(f"The fraction of good matches")
+ax[3].set_xlabel("Games")
+ax[3].set_ylabel("Fraction of good matches")
+ax[3].set_ylim((0, 1.1))
+ax[3].legend()
 
 ax[2].set_ylim(np.min(skills) * 1.1 - 200, np.max(skills) * 1.1 + 200)
 ax[2].plot([np.min(skills), np.max(skills)],
@@ -92,3 +105,12 @@ for i in range(2):
 plt.tight_layout()
 plt.savefig("img/comparing_strategies.png")
 print(f"Everything finished in {time.time()-start:.2f} seconds")
+
+# Stats for mu differences
+diff = Stats.max_mu - Stats.min_mu
+times = diff / (25 / 6)
+print(f"{Stats.min_mu=:.2f} {Stats.max_mu=:.2f}\n{diff=:.2f} {times=:.2f}")
+
+# Plot various stats for trueskill
+plot_data(ts_data['data'], ts_data['prediction_differences'],
+          ts_data['match_accuracy'], PLAYERS, GAMES, 'trueskill')

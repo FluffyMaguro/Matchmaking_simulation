@@ -4,7 +4,7 @@
 test.cpp
 log.txt
 data.json
-psimulation.cp38-win_amd64.pyd
+psimulation.cp310-win_amd64.pyd
 build/*
 cache
 test.py
