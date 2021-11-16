@@ -84,8 +84,8 @@ public:
 class Trueskill_strategy : public MatchmakingStrategy
 {
     const double MU = 25.;          //   25
-    const double SIGMA = 25 / 3;    //  ~ 8.333
-    const double BETA = SIGMA / 2;  //  ~ 4.166    # Variance of performance
+    const double SIGMA = 25. / 3;    //  ~ 8.333
+    const double BETA = 27. / 6;  //  ~ 4.166    # Variance of performance
     const double TAU = SIGMA / 100; //  ~ 0.083    # Dynamic variance
 
 public:
@@ -111,7 +111,7 @@ public:
     bool good_match(Player &p1, Player &p2)
     {
         // 0.40 since default settings lead to 0.4472 quality
-        return match_quality(p1, p2) > 0.40;
+        return match_quality(p1, p2) > 0.40 && std::abs(winning_chance(p1, p2) - 0.5) < 0.17;
     }
 
     // Calculates normal distribution at point

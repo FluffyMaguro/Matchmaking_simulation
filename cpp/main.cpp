@@ -32,7 +32,7 @@ Simulation run_sim(int players, int iterations, int sp1, int sp2, int sp3, doubl
     if (strategy_type == "trueskill")
     {
         sim.m_force_player_mmr = 25.0;
-        sim.m_force_player_sigma = 25 / 3;
+        sim.m_force_player_sigma = 25. / 3;
     }
 
     if (gradual)

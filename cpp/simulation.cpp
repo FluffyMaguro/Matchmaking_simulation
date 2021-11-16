@@ -88,7 +88,7 @@ void Simulation::play_games(int number)
     {
         // Pick a random player
         player = m_RNG() % players_num;
-        if (games_played % 1000 == 0)
+        if (games_played % 100 == 0)
             calculate_good_match_fraction(players[player], players_num);
 
         // Pick a random opponent

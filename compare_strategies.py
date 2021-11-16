@@ -12,7 +12,7 @@ from trueskill_rate import Stats
 
 ### RUN SIMULATION
 PLAYERS = 20000
-GAMES = 5000000
+GAMES = 2000000
 
 strategy_types = ["naive", "elo", "tweaked_elo", "tweaked2_elo", "trueskill"]
 psimulation.set_my_python_function(trueskill_rate.rate_1v1)
@@ -73,6 +73,7 @@ ax[3].set_title(f"The fraction of good matches")
 ax[3].set_xlabel("Games")
 ax[3].set_ylabel("Fraction of good matches")
 ax[3].set_ylim((0, 1.1))
+ax[3].grid(alpha=0.2)
 ax[3].legend()
 
 ax[2].set_ylim(np.min(skills) * 1.1 - 200, np.max(skills) * 1.1 + 200)
