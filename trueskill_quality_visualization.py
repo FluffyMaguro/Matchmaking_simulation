@@ -47,10 +47,10 @@ def main():
         return 1.5 - abs(0.5 - p1w) # offset for visibility
 
     # custom color map denoting the CUTOFF
-    my_colors = [(0, 0, 0.5), (0, 0, 1), (0.2, 0.8, 0.2), (0, 0.8, 0)]
+    my_colors = [(0.2, 0.2, 0.8), (0, 0, 1), (0.2, 0.8, 0.2), (0, 0.8, 0)]
     my_cmap = colors.LinearSegmentedColormap.from_list('my_cmap',
                                                        my_colors,
-                                                       N=4)
+                                                       N=2)
     divnorm = colors.TwoSlopeNorm(vmin=0, vcenter=CUTOFF, vmax=1)
 
     ts_match_quality = get_trueskill_quality(x, y)
@@ -58,14 +58,14 @@ def main():
         x,
         y,
         ts_match_quality,
-        cmap=my_cmap,
+        cmap='viridis',
         norm=divnorm,
         edgecolor="black",
         linewidth=0.1,
     )
 
     win_predictions = get_close_to_50(x, y)
-    ax.plot_surface(x, y, win_predictions, cmap='inferno')
+    ax.plot_surface(x, y, win_predictions, cmap='cividis', edgecolor="black",linewidth=0.1,)
 
     print(f"Maximum match quality: {np.max(ts_match_quality):.3f}")
     print(f"Maximum winrate: {max(winrates):.2%} for cutoff: {CUTOFF}")
